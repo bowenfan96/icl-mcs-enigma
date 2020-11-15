@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <fstream>
+#include <cstring>
 #include <string>
 #include <algorithm>
 
@@ -30,6 +31,11 @@ plugboard::plugboard(const char* pb_filename) {
         i++;
     }
     
+    // mirror the mapping arrays
+    std::vector<int> swap = map_from;
+    map_from.insert(map_from.end(), map_to.begin(), map_to.end());
+    map_to.insert(map_to.end(), swap.begin(), swap.end());
+    
     // Check if number maps to itself
     // Check if odd number of numbers
     // Check if number is a valid alphabet (0 to 25)
@@ -39,10 +45,10 @@ plugboard::plugboard(const char* pb_filename) {
 
 // plugboard mapper function
 int plugboard::mapper(int input) {
-    std::vector<int>::iterator iter = std::find(map_from.begin(), map_from.end(), input);
+    std::vector<int>::iterator iter_fr = std::find(map_from.begin(), map_from.end(), input);
     
-    if(iter != map_from.cend()) {
-        int index = std::distance(map_from.begin(), iter);
+    if(iter_fr != map_from.cend()) {
+        int index = std::distance(map_from.begin(), iter_fr);
         return map_to.at(index);
     }
     
@@ -52,13 +58,24 @@ int plugboard::mapper(int input) {
 }
 
 
+
+
+
+
 class rotor {
+    bool reflected;
+    
 public:
+    int position;
+    
     rotor(const char*);
     int map_to[26];
     std::vector<int> triggers;
     
+    bool rightmost;
+    
     void rotate();
+    void reflect();
     int mapper(int);
 };
 
@@ -79,6 +96,12 @@ rotor::rotor(const char* rot_filename) {
         i++;
     }
     
+    reflected = false;
+    rightmost = false;
+    
+    // init position to 0 for now
+    position = 0;
+    
     // Check input mapping is one to one, and all inputs are mapped
     // Check all numbers are 0 to 25
     // Check if inputs are all numbers
@@ -96,14 +119,33 @@ void rotor::rotate() {
 
 // rotor mapper function
 int rotor::mapper(int input) {
-    return map_to[input];
+    if(!reflected) {
+        return map_to[input];
+    }
+    
+    else {
+        int index = std::distance(map_to, std::find(map_to, map_to + 26, input));
+        
+        std::cout << "Reflected index: " << index << std::endl;
+        
+        return index;
+    }
 }
+
+// set reflected flag on rotor
+void rotor::reflect() {
+    reflected = true;
+}
+
+
+
+
 
 class reflector {
 public:
     reflector(const char*);
-    int map_from[13];
-    int map_to[13];
+    int map_from[26];
+    int map_to[26];
     
     int mapper(int);
 };
@@ -117,13 +159,20 @@ reflector::reflector(const char* rf_filename) {
     int i = 0;
     while(rf_file >> rf_num) {
         if(i % 2 == 0) {
-            map_from[i] = rf_num;
+            map_from[i/2] = rf_num;
         }
         else if(i % 2 != 0) {
-            map_to[i] = rf_num;
+            map_to[i/2] = rf_num;
         }
         i++;
     }
+    
+    // mirror map_from and map_to
+    for(int i=0; i<13; i++) {
+        map_from[i + 13] = map_to[i];
+        map_to[i + 13] = map_from[i];
+    }
+    
     
     // Check input is not mapped to itself and is one to one
     // Check 13 pairs
@@ -134,9 +183,14 @@ reflector::reflector(const char* rf_filename) {
 
 // reflector mapper function
 int reflector::mapper(int input) {
-    int index = std::distance(map_from, std::find(map_from, map_from + 13, input));
+    
+    int index = std::distance(map_from, std::find(map_from, map_from + 26, input));
+    
     return map_to[index];
 }
+
+
+
 
 /* Press A
  * plugboard makes A --> G
@@ -165,26 +219,110 @@ int main() {
     // load plugboard
     plugboard pb("/home/bowen/ipl/mcslab_2_bf420/plugboards/V.pb");
     
-    // create a vector of rotors
-    // std::vector<rotor> rotors;
-    
-    // get num_rotors from input parameter at the start
-    // int num_rotors;
-    // rotors.resize(num_rotors);
-    
-    // load rotors
-    
-    
     // call plugboard with input integer representing letter
     
-    // test with input = 21
-    // should output to 1
-    int input = 21;
+    // test plugboard with input = 23
+    // should output to 22
+    int input = 23;
     
     input = pb.mapper(input);
     
-    std::cout << input << std::endl;
+    std::cout << "After plugboard: " << input << std::endl;
     
     
     
+    
+    // create a vector of rotors
+    std::vector<rotor> vec_rotors;
+    
+    // get num_rotors from input parameter at the start
+    
+    // test with 2 rotors now
+    int num_rotors = 2;
+    // vec_rotors.resize(num_rotors); NOT NEEDED COS VEC_ROTORS ALREADY USE PUSHBACK
+    
+    // load rotors using a for loop
+    
+    // make a filename vector for the rotors
+    std::vector<std::string> rot_filenames;
+    
+    /*
+    for(int i=0; i<num_rotors; i++) {
+        rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/V.rot");
+        
+    }*/
+    
+    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/IV.rot");
+    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/V.rot");
+    
+    for(int i=0; i<num_rotors; i++) {
+        vec_rotors.push_back(rotor(rot_filenames.at(i).c_str()));
+    }
+    
+    // set flag on rightmost rotor
+    vec_rotors[num_rotors - 1].rightmost = true;
+    
+    // test rotor with input = 0
+    // input = 0;
+    
+    
+    // for rotor in rotors - but starting from rightmost
+    // a reverse iterator is used
+    
+    for(std::vector<rotor>::reverse_iterator rot = vec_rotors.rbegin(); rot != vec_rotors.rend(); ++rot) {
+        if((*rot).rightmost) {
+            (*rot).rotate();
+        }
+        
+        else if(!(*rot).rightmost) {
+            if( std::find(std::begin((*(rot - 1)).triggers), std::end((*(rot - 1)).triggers), 
+                     (*(rot - 1)).position) != std::end((*(rot - 1)).triggers) ) {
+                
+                (*rot).rotate();
+            
+                }
+        }
+        
+        input = (*rot).mapper(input);
+        (*rot).reflect();
+    }
+    
+    std::cout << "After right to left rotors: " << input << std::endl;
+    
+    
+    
+    // load reflector
+    reflector rf("/home/bowen/ipl/mcslab_2_bf420/reflectors/V.rf");
+    
+    // test reflector with input = 0
+    // should map to 17
+    
+    // input = 18;
+    
+    input = rf.mapper(input);
+    
+    std::cout << "After reflector: " << input << std::endl;
+    
+    
+    // rotor after reflectors
+    
+    for(std::vector<rotor>::iterator rot = vec_rotors.begin(); rot != vec_rotors.end(); ++rot) {
+        input = (*rot).mapper(input);
+    }
+    
+    
+    std::cout << "After left to right rotors, FINAL: " << input << std::endl;
+    
+    
+    /*
+     * test with input 23 (W)
+     * v.pb: 23 > 22
+     * v.rot: 22 > 5
+     * iv.rot: 5 > 25
+     * v.rf: 25 > 16
+     * iv.rot: 16 > 9
+     * v.rot: 9 > 20
+    
+    
+    */
 }
