@@ -96,11 +96,22 @@ rotor::rotor(const char* rot_filename) {
         i++;
     }
     
+    // do offset by position
+    // init position to 0 for now
+    position = 0;
+    
+    for(int i=0; i<position; i++) {
+        int swap = map_to[0];
+        for(int i=0; i<25; i++) {
+            map_to[i] = map_to[i+1];
+        }
+        map_to[25] = swap;
+    }
+    
+    
     reflected = false;
     rightmost = false;
     
-    // init position to 0 for now
-    position = 0;
     
     // Check input mapping is one to one, and all inputs are mapped
     // Check all numbers are 0 to 25
@@ -115,6 +126,8 @@ void rotor::rotate() {
         map_to[i] = map_to[i+1];
     }
     map_to[25] = swap;
+    
+    position++;
 }
 
 // rotor mapper function
@@ -217,13 +230,13 @@ int reflector::mapper(int input) {
 int main() {
     
     // load plugboard
-    plugboard pb("/home/bowen/ipl/mcslab_2_bf420/plugboards/V.pb");
+    plugboard pb("/home/bowen/ipl/mcslab_2_bf420/plugboards/I.pb");
     
     // call plugboard with input integer representing letter
     
     // test plugboard with input = 23
     // should output to 22
-    int input = 23;
+    int input = 3;
     
     input = pb.mapper(input);
     
@@ -238,7 +251,7 @@ int main() {
     // get num_rotors from input parameter at the start
     
     // test with 2 rotors now
-    int num_rotors = 2;
+    int num_rotors = 3;
     // vec_rotors.resize(num_rotors); NOT NEEDED COS VEC_ROTORS ALREADY USE PUSHBACK
     
     // load rotors using a for loop
@@ -252,8 +265,9 @@ int main() {
         
     }*/
     
-    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/IV.rot");
-    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/V.rot");
+    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/I.rot");
+    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/II.rot");
+    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/III.rot");
     
     for(int i=0; i<num_rotors; i++) {
         vec_rotors.push_back(rotor(rot_filenames.at(i).c_str()));
@@ -274,7 +288,7 @@ int main() {
             (*rot).rotate();
         }
         
-        else if(!(*rot).rightmost) {
+        else {
             if( std::find(std::begin((*(rot - 1)).triggers), std::end((*(rot - 1)).triggers), 
                      (*(rot - 1)).position) != std::end((*(rot - 1)).triggers) ) {
                 
@@ -292,7 +306,7 @@ int main() {
     
     
     // load reflector
-    reflector rf("/home/bowen/ipl/mcslab_2_bf420/reflectors/V.rf");
+    reflector rf("/home/bowen/ipl/mcslab_2_bf420/reflectors/II.rf");
     
     // test reflector with input = 0
     // should map to 17
@@ -317,11 +331,11 @@ int main() {
     /*
      * test with input 23 (W)
      * v.pb: 23 > 22
-     * v.rot: 22 > 5
+     * v.rot: 22 > 5     rotor rotates - all values shift left
      * iv.rot: 5 > 25
      * v.rf: 25 > 16
      * iv.rot: 16 > 9
-     * v.rot: 9 > 20
+     * v.rot: 9 > 19
     
     
     */
