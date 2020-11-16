@@ -133,6 +133,9 @@ void rotor::rotate() {
 // rotor mapper function
 int rotor::mapper(int input) {
     if(!reflected) {
+        
+        std::cout << "Forward mapped to: " << map_to[input] << std::endl;
+        
         return map_to[input];
     }
     
@@ -236,7 +239,7 @@ int main() {
     
     // test plugboard with input = 23
     // should output to 22
-    int input = 3;
+    int input = 0;
     
     input = pb.mapper(input);
     
@@ -265,9 +268,9 @@ int main() {
         
     }*/
     
-    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/I.rot");
-    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/II.rot");
-    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/III.rot");
+    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/test.rot");
+    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/test.rot");
+    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/test.rot");
     
     for(int i=0; i<num_rotors; i++) {
         vec_rotors.push_back(rotor(rot_filenames.at(i).c_str()));
@@ -339,4 +342,13 @@ int main() {
     
     
     */
+    
+    
+    std::string line;
+    
+    while (std::getline(std::cin, line)) {
+        std::cout << line << std::endl;
+        
+    }
+    
 }
