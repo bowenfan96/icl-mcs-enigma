@@ -229,8 +229,43 @@ int reflector::mapper(int input) {
 
 
 
+// loader to load all the components
+class loader {
+public:
+    loader(int, char**);
+    
+    std::string pb_filename;
+    std::string rf_filename;
+    std::vector<std::string> rot_filenames;
+    std::string pos_filename;
+};
 
-int main() {
+// loader constructor
+loader::loader(int argc, char** argv) {
+    pb_filename = argv[1];
+    rf_filename = argv[2];
+    
+    for(int i=3; i < (argc - 1)); i++) {
+        rot_filenames.push_back(argv[i]);
+    }
+    
+    pos_filename = argv[argc - 1];
+}
+
+
+int main(int argc, char** argv) {
+    
+    // load parameters
+    
+    loader load(argc, argv);
+    
+    std::cout << "Number of parameters: " << argc << std::endl;
+    
+    for(int i=0; i<argc; i++) {
+        std::cout << argv[i] << std::endl;
+    }
+    
+    
     
     // load plugboard
     plugboard pb("/home/bowen/ipl/mcslab_2_bf420/plugboards/I.pb");
@@ -342,7 +377,6 @@ int main() {
     
     
     */
-    
     
     std::string line;
     
