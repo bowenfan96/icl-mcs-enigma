@@ -252,10 +252,14 @@ enigma::enigma(int argc, char** argv) {
     rf_filename = argv[2];
     
     num_rotors = 0;
-    for(int i=3; i < (argc - 1); i++) {
-        rot_filenames.push_back(argv[i]);
-        num_rotors++;
+    
+    if(argc > 4) {
+        for(int i=3; i < (argc - 1); i++) {
+            rot_filenames.push_back(argv[i]);
+            num_rotors++;
+        }
     }
+    
     
     pos_filename = argv[argc - 1];
     
@@ -265,12 +269,14 @@ enigma::enigma(int argc, char** argv) {
     
     
     // load rotors
-    for(int i=0; i<num_rotors; i++) {
-        vec_rotors.push_back(rotor(rot_filenames.at(i).c_str()));
+    if(num_rotors > 0) {
+        for(int i=0; i<num_rotors; i++) {
+            vec_rotors.push_back(rotor(rot_filenames.at(i).c_str()));
+        }
+        
+        // set flag on rightmost rotor
+        vec_rotors[num_rotors - 1].rightmost = true;
     }
-    
-    // set flag on rightmost rotor
-    vec_rotors[num_rotors - 1].rightmost = true;
     
     
     // load reflector
@@ -293,25 +299,28 @@ int main(int argc, char** argv) {
     
         // std::cout << "After plugboard: " << input << std::endl;
         
-        // for rotor in rotors - but starting from rightmost
-        // a reverse iterator is used
-        for(std::vector<enigma::rotor>::reverse_iterator rot = en.vec_rotors.rbegin(); rot != en.vec_rotors.rend(); ++rot) {
-            if((*rot).rightmost) {
-                (*rot).rotate();
-            }
-            
-            else {
-                if( std::find(std::begin((*(rot - 1)).triggers), std::end((*(rot - 1)).triggers), 
-                        (*(rot - 1)).position) != std::end((*(rot - 1)).triggers) ) {
-                    
+        if(en.num_rotors > 0) {
+            // for rotor in rotors - but starting from rightmost
+            // a reverse iterator is used
+            for(std::vector<enigma::rotor>::reverse_iterator rot = en.vec_rotors.rbegin(); rot != en.vec_rotors.rend(); ++rot) {
+                if((*rot).rightmost) {
                     (*rot).rotate();
+                }
                 
-                    }
+                else {
+                    if( std::find(std::begin((*(rot - 1)).triggers), std::end((*(rot - 1)).triggers), 
+                            (*(rot - 1)).position) != std::end((*(rot - 1)).triggers) ) {
+                        
+                        (*rot).rotate();
+                    
+                        }
+                }
+                
+                input = (*rot).mapper(input);
+                (*rot).reflect();
             }
-            
-            input = (*rot).mapper(input);
-            (*rot).reflect();
         }
+        
         
         // std::cout << "After right to left rotors: " << input << std::endl;
         
@@ -319,12 +328,13 @@ int main(int argc, char** argv) {
         
         // std::cout << "After reflector: " << input << std::endl;
         
-        // rotor after reflectors
-        
-        for(std::vector<enigma::rotor>::iterator rot = en.vec_rotors.begin(); rot != en.vec_rotors.end(); ++rot) {
-            input = (*rot).mapper(input);
+        if(en.num_rotors > 0) {
+            // rotor after reflectors
+            
+            for(std::vector<enigma::rotor>::iterator rot = en.vec_rotors.begin(); rot != en.vec_rotors.end(); ++rot) {
+                input = (*rot).mapper(input);
+            }
         }
-        
         
         // std::cout << "After left to right rotors, FINAL: " << input << std::endl;
         
@@ -332,8 +342,6 @@ int main(int argc, char** argv) {
         
         std::cout << letter_out;
         
-    }
-    
-    
+    }    
     
 }
