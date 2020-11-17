@@ -180,7 +180,7 @@ void enigma::rotor::rotate() {
 int enigma::rotor::mapper(int input) {
     if(!reflected) {
         
-        std::cout << "Forward mapped to: " << map_to[input] << std::endl;
+        // std::cout << "Forward mapped to: " << map_to[input] << std::endl;
         
         return map_to[input];
     }
@@ -188,7 +188,7 @@ int enigma::rotor::mapper(int input) {
     else {
         int index = std::distance(map_to, std::find(map_to, map_to + 26, input));
         
-        std::cout << "Reflected index: " << index << std::endl;
+        // std::cout << "Reflected index: " << index << std::endl;
         
         return index;
     }
@@ -283,72 +283,57 @@ int main(int argc, char** argv) {
     // load components into enigma
     enigma en(argc, argv);
     
-    // call plugboard with input integer representing letter
-    int input = 17;
+    char letter_in;
     
-    input = en.pb->mapper(input);
-    
-    std::cout << "After plugboard: " << input << std::endl;
-    
-    
-    // for rotor in rotors - but starting from rightmost
-    // a reverse iterator is used
-    for(std::vector<enigma::rotor>::reverse_iterator rot = en.vec_rotors.rbegin(); rot != en.vec_rotors.rend(); ++rot) {
-        if((*rot).rightmost) {
-            (*rot).rotate();
-        }
+    while (std::cin >> std::ws >> letter_in) {
         
-        else {
-            if( std::find(std::begin((*(rot - 1)).triggers), std::end((*(rot - 1)).triggers), 
-                     (*(rot - 1)).position) != std::end((*(rot - 1)).triggers) ) {
-                
+        int input = letter_in - 'A';
+        
+        input = en.pb->mapper(input);
+    
+        // std::cout << "After plugboard: " << input << std::endl;
+        
+        // for rotor in rotors - but starting from rightmost
+        // a reverse iterator is used
+        for(std::vector<enigma::rotor>::reverse_iterator rot = en.vec_rotors.rbegin(); rot != en.vec_rotors.rend(); ++rot) {
+            if((*rot).rightmost) {
                 (*rot).rotate();
+            }
             
-                }
+            else {
+                if( std::find(std::begin((*(rot - 1)).triggers), std::end((*(rot - 1)).triggers), 
+                        (*(rot - 1)).position) != std::end((*(rot - 1)).triggers) ) {
+                    
+                    (*rot).rotate();
+                
+                    }
+            }
+            
+            input = (*rot).mapper(input);
+            (*rot).reflect();
         }
         
-        input = (*rot).mapper(input);
-        (*rot).reflect();
+        // std::cout << "After right to left rotors: " << input << std::endl;
+        
+        input = en.rf->mapper(input);
+        
+        // std::cout << "After reflector: " << input << std::endl;
+        
+        // rotor after reflectors
+        
+        for(std::vector<enigma::rotor>::iterator rot = en.vec_rotors.begin(); rot != en.vec_rotors.end(); ++rot) {
+            input = (*rot).mapper(input);
+        }
+        
+        
+        // std::cout << "After left to right rotors, FINAL: " << input << std::endl;
+        
+        char letter_out = (char)('A' + input);
+        
+        std::cout << letter_out << std::endl;
+        
     }
     
-    std::cout << "After right to left rotors: " << input << std::endl;
     
-    
-    input = en.rf->mapper(input);
-    
-    std::cout << "After reflector: " << input << std::endl;
-    
-    
-    // rotor after reflectors
-    
-    for(std::vector<enigma::rotor>::iterator rot = en.vec_rotors.begin(); rot != en.vec_rotors.end(); ++rot) {
-        input = (*rot).mapper(input);
-    }
-    
-    
-    std::cout << "After left to right rotors, FINAL: " << input << std::endl;
     
 }
-
-
-
-/*
-     * test with input 23 (W)
-     * v.pb: 23 > 22
-     * v.rot: 22 > 5     rotor rotates - all values shift left
-     * iv.rot: 5 > 25
-     * v.rf: 25 > 16
-     * iv.rot: 16 > 9
-     * v.rot: 9 > 19
-    
-    
-    
-    
-    std::string line;
-    
-    while (std::getline(std::cin, line)) {
-        std::cout << line << std::endl;
-        
-    }
-    
-    */
