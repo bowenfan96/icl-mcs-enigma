@@ -229,46 +229,53 @@ int reflector::mapper(int input) {
 
 
 
-// loader to load all the components
-class loader {
+// machine class to incorporate all the components
+class machine {
 public:
-    loader(int, char**);
+    machine(int, char**);
+    
+    int num_rotors;
     
     std::string pb_filename;
     std::string rf_filename;
     std::vector<std::string> rot_filenames;
     std::string pos_filename;
+    
+    // create a vector of rotors
+    std::vector<rotor> vec_rotors;
 };
 
-// loader constructor
-loader::loader(int argc, char** argv) {
+// machine constructor
+machine::machine(int argc, char** argv) {
     pb_filename = argv[1];
     rf_filename = argv[2];
     
+    num_rotors = 0;
     for(int i=3; i < (argc - 1)); i++) {
         rot_filenames.push_back(argv[i]);
+        num_rotors++;
     }
     
     pos_filename = argv[argc - 1];
+    
+    // load plugboard into machine
+    plugboard pb(pb_filename);
+    
+    // load rotors into machine
+    for(int i=0; i<num_rotors; i++) {
+        vec_rotors.push_back(rotor(rot_filenames.at(i).c_str()));
+    }
+    
+    // set flag on rightmost rotor
+    vec_rotors[num_rotors - 1].rightmost = true;
 }
 
 
 int main(int argc, char** argv) {
     
     // load parameters
+    machine mach(argc, argv);
     
-    loader load(argc, argv);
-    
-    std::cout << "Number of parameters: " << argc << std::endl;
-    
-    for(int i=0; i<argc; i++) {
-        std::cout << argv[i] << std::endl;
-    }
-    
-    
-    
-    // load plugboard
-    plugboard pb("/home/bowen/ipl/mcslab_2_bf420/plugboards/I.pb");
     
     // call plugboard with input integer representing letter
     
@@ -281,46 +288,8 @@ int main(int argc, char** argv) {
     std::cout << "After plugboard: " << input << std::endl;
     
     
-    
-    
-    // create a vector of rotors
-    std::vector<rotor> vec_rotors;
-    
-    // get num_rotors from input parameter at the start
-    
-    // test with 2 rotors now
-    int num_rotors = 3;
-    // vec_rotors.resize(num_rotors); NOT NEEDED COS VEC_ROTORS ALREADY USE PUSHBACK
-    
-    // load rotors using a for loop
-    
-    // make a filename vector for the rotors
-    std::vector<std::string> rot_filenames;
-    
-    /*
-    for(int i=0; i<num_rotors; i++) {
-        rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/V.rot");
-        
-    }*/
-    
-    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/test.rot");
-    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/test.rot");
-    rot_filenames.push_back("/home/bowen/ipl/mcslab_2_bf420/rotors/test.rot");
-    
-    for(int i=0; i<num_rotors; i++) {
-        vec_rotors.push_back(rotor(rot_filenames.at(i).c_str()));
-    }
-    
-    // set flag on rightmost rotor
-    vec_rotors[num_rotors - 1].rightmost = true;
-    
-    // test rotor with input = 0
-    // input = 0;
-    
-    
     // for rotor in rotors - but starting from rightmost
     // a reverse iterator is used
-    
     for(std::vector<rotor>::reverse_iterator rot = vec_rotors.rbegin(); rot != vec_rotors.rend(); ++rot) {
         if((*rot).rightmost) {
             (*rot).rotate();
@@ -345,11 +314,6 @@ int main(int argc, char** argv) {
     
     // load reflector
     reflector rf("/home/bowen/ipl/mcslab_2_bf420/reflectors/II.rf");
-    
-    // test reflector with input = 0
-    // should map to 17
-    
-    // input = 18;
     
     input = rf.mapper(input);
     

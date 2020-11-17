@@ -1,2 +1,2 @@
 enigma: enigma.cpp
-	g++ -g -Wall enigma.cpp
+	g++ -g -Wall -o enigma enigma.cpp

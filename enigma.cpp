@@ -330,7 +330,7 @@ int main(int argc, char** argv) {
         
         char letter_out = (char)('A' + input);
         
-        std::cout << letter_out << std::endl;
+        std::cout << letter_out;
         
     }
     
