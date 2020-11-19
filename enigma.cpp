@@ -14,8 +14,8 @@ public:
     class plugboard {
     public:
         plugboard(const char*);
-        std::vector<int> map_rtl;
-        std::vector<int> map_ltr;
+        std::vector<int> map_from;
+        std::vector<int> map_to;
         int mapper(int);
     };
 
@@ -29,13 +29,11 @@ public:
         int position;
         int map_rtl[26];
         int map_ltr[26];
-        std::vector<int> triggers;
         
-        bool rightmost;
+        std::vector<int> triggers;
         bool triggered;
         
         void rotate();
-
         int mapper(int);
         int rf_mapper(int);
     };
@@ -44,8 +42,8 @@ public:
     class reflector {
     public:
         reflector(const char*);
-        int map_rtl[26];
-        int map_ltr[26];
+        int map_from[26];
+        int map_to[26];
         
         int mapper(int);
     };
@@ -80,18 +78,18 @@ enigma::plugboard::plugboard(const char* pb_filename) {
     int i = 0;
     while(pb_file >> pb_num) {
         if(i % 2 == 0) {
-            map_rtl.push_back(pb_num);
+            map_from.push_back(pb_num);
         }
         else if(i % 2 != 0) {
-            map_ltr.push_back(pb_num);
+            map_to.push_back(pb_num);
         }
         i++;
     }
     
     // mirror the mapping arrays
-    std::vector<int> swap = map_rtl;
-    map_rtl.insert(map_rtl.end(), map_ltr.begin(), map_ltr.end());
-    map_ltr.insert(map_ltr.end(), swap.begin(), swap.end());
+    std::vector<int> swap = map_from;
+    map_from.insert(map_from.end(), map_to.begin(), map_to.end());
+    map_to.insert(map_to.end(), swap.begin(), swap.end());
     
     // Check if number maps to itself
     // Check if odd number of numbers
@@ -102,11 +100,12 @@ enigma::plugboard::plugboard(const char* pb_filename) {
 
 // plugboard mapper function
 int enigma::plugboard::mapper(int input) {
-    std::vector<int>::iterator iter_fr = std::find(map_rtl.begin(), map_rtl.end(), input);
     
-    if(iter_fr != map_rtl.cend()) {
-        int index = std::distance(map_rtl.begin(), iter_fr);
-        return map_ltr.at(index);
+    auto iter = std::find(map_from.cbegin(), map_from.cend(), input);
+    
+    if(iter != map_from.cend()) {
+        int index = std::distance(map_from.cbegin(), iter);
+        return map_to.at(index);
     }
     
     else {
@@ -137,7 +136,6 @@ enigma::rotor::rotor(const char* rot_filename) {
     // init position to 0 for now
     position = 0;
     
-    rightmost = false;
     triggered = false;
     
     
@@ -153,7 +151,7 @@ void enigma::rotor::rotate() {
     
     // std::cout << "Rotated" << std::endl;
     
-    if(std::find(triggers.begin(), triggers.end(), position) != triggers.end()) {
+    if(std::find(triggers.cbegin(), triggers.cend(), position) != triggers.cend()) {
         
         // std::cout << "Triggered" << std::endl;
         triggered = true;
@@ -226,18 +224,18 @@ enigma::reflector::reflector(const char* rf_filename) {
     int i = 0;
     while(rf_file >> rf_num) {
         if(i % 2 == 0) {
-            map_rtl[i/2] = rf_num;
+            map_from[i/2] = rf_num;
         }
         else if(i % 2 != 0) {
-            map_ltr[i/2] = rf_num;
+            map_to[i/2] = rf_num;
         }
         i++;
     }
     
-    // mirror map_rtl and map_ltr
+    // mirror map_from and map_to
     for(int i=0; i<13; i++) {
-        map_rtl[i + 13] = map_ltr[i];
-        map_ltr[i + 13] = map_rtl[i];
+        map_from[i + 13] = map_to[i];
+        map_to[i + 13] = map_from[i];
     }
     
     
@@ -251,9 +249,9 @@ enigma::reflector::reflector(const char* rf_filename) {
 // reflector mapper function
 int enigma::reflector::mapper(int input) {
     
-    int index = std::distance(map_rtl, std::find(map_rtl, map_rtl + 26, input));
+    int index = std::distance(map_from, std::find(map_from, map_from + 26, input));
     
-    return map_ltr[index];
+    return map_to[index];
 }
 
 
@@ -277,23 +275,27 @@ enigma::enigma(int argc, char** argv) {
         }
     }
     
-    
     pos_filename = argv[argc - 1];
-    
     
     // load plugboard
     pb = new plugboard(pb_filename.c_str());
     
     
+    // load rotor positions
+    std::ifstream pos_file;
+    pos_file.open(pos_filename);
+    
+    int rot_pos;
+    while(pos_file >> rot_pos) {
+        vec_rot_posn.push_back(rot_pos);
+    }
+    
     // load rotors
     if(num_rotors > 0) {
         for(int i=0; i<num_rotors; i++) {
             vec_rotors.push_back(rotor(rot_filenames.at(i).c_str()));
-            vec_rot_posn.push_back(vec_rotors[i].position);
+            vec_rotors.at(i).position = vec_rot_posn.at(i);
         }
-        
-        // set flag on rightmost rotor
-        vec_rotors[num_rotors - 1].rightmost = true;
     }
     
     
@@ -343,6 +345,8 @@ char enigma::encryptor(char letter) {
             
         }
     }
+    
+    input = pb->mapper(input);
     
     // std::cout << "After left to right rotors, FINAL: " << input << std::endl;
     
