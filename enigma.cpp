@@ -16,7 +16,7 @@
  * rotor 1 eg. BCDEFG
  * rotor 1 gets turned
  * now A --> C (CDEFGB)
- * map_to[i] = map_to[i+1]
+ * map_ltr[i] = map_ltr[i+1]
  * 
  * so rotor 1 in position 2 (displaced 3 notches)
  * rotor 2 takes in F, unless rotor 1 displaces it
@@ -39,8 +39,8 @@ public:
     class plugboard {
     public:
         plugboard(const char*);
-        std::vector<int> map_from;
-        std::vector<int> map_to;
+        std::vector<int> map_rtl;
+        std::vector<int> map_ltr;
         int mapper(int);
     };
 
@@ -52,8 +52,8 @@ public:
         
         rotor(const char*);
         
-        int map_from[26];
-        int map_to[26];
+        int map_rtl[26];
+        int map_ltr[26];
         std::vector<int> triggers;
         
         bool rightmost;
@@ -68,13 +68,16 @@ public:
     class reflector {
     public:
         reflector(const char*);
-        int map_from[26];
-        int map_to[26];
+        int map_rtl[26];
+        int map_ltr[26];
         
         int mapper(int);
     };
     
     enigma(int, char**);
+    
+    char encryptor(char);
+    
     int num_rotors;
     
     // rotors loaded as leftmost being element 0
@@ -86,6 +89,7 @@ public:
     plugboard* pb = NULL;
     reflector* rf = NULL;
     
+    std::string output_string;
 };
 
 
@@ -98,18 +102,18 @@ enigma::plugboard::plugboard(const char* pb_filename) {
     int i = 0;
     while(pb_file >> pb_num) {
         if(i % 2 == 0) {
-            map_from.push_back(pb_num);
+            map_rtl.push_back(pb_num);
         }
         else if(i % 2 != 0) {
-            map_to.push_back(pb_num);
+            map_ltr.push_back(pb_num);
         }
         i++;
     }
     
     // mirror the mapping arrays
-    std::vector<int> swap = map_from;
-    map_from.insert(map_from.end(), map_to.begin(), map_to.end());
-    map_to.insert(map_to.end(), swap.begin(), swap.end());
+    std::vector<int> swap = map_rtl;
+    map_rtl.insert(map_rtl.end(), map_ltr.begin(), map_ltr.end());
+    map_ltr.insert(map_ltr.end(), swap.begin(), swap.end());
     
     // Check if number maps to itself
     // Check if odd number of numbers
@@ -120,11 +124,11 @@ enigma::plugboard::plugboard(const char* pb_filename) {
 
 // plugboard mapper function
 int enigma::plugboard::mapper(int input) {
-    std::vector<int>::iterator iter_fr = std::find(map_from.begin(), map_from.end(), input);
+    std::vector<int>::iterator iter_fr = std::find(map_rtl.begin(), map_rtl.end(), input);
     
-    if(iter_fr != map_from.cend()) {
-        int index = std::distance(map_from.begin(), iter_fr);
-        return map_to.at(index);
+    if(iter_fr != map_rtl.cend()) {
+        int index = std::distance(map_rtl.begin(), iter_fr);
+        return map_ltr.at(index);
     }
     
     else {
@@ -142,8 +146,8 @@ enigma::rotor::rotor(const char* rot_filename) {
     int i = 0;
     while(rot_file >> rot_num) {
         if(i <= 25) {
-            map_from[i] = rot_num;
-            map_to[rot_num] = i;
+            map_rtl[i] = rot_num;
+            map_ltr[rot_num] = i;
         }
         else {
             triggers.push_back(rot_num);
@@ -157,11 +161,11 @@ enigma::rotor::rotor(const char* rot_filename) {
     
     /*
     for(int i=0; i<position; i++) {
-        int swap = map_from[25];
+        int swap = map_rtl[25];
         for(int j=0; j<25; j++) {
-            map_from[j+1] = map_from[j];
+            map_rtl[j+1] = map_rtl[j];
         }
-        map_to[0] = swap;
+        map_ltr[0] = swap;
     }
     */
     
@@ -177,11 +181,11 @@ enigma::rotor::rotor(const char* rot_filename) {
 // rotor rotate function
 void enigma::rotor::rotate() {
     /*
-    int swap = map_from[25];
+    int swap = map_rtl[25];
     for(int j=0; j<25; j++) {
-        map_from[j+1] = map_from[j];
+        map_rtl[j+1] = map_rtl[j];
     }
-    map_from[0] = swap;
+    map_rtl[0] = swap;
     */
     position++;
     
@@ -189,11 +193,25 @@ void enigma::rotor::rotate() {
 
 // rotor mapper function
 int enigma::rotor::mapper(int input) {
-        
-    int index = std::distance(map_from, std::find(map_from, map_from + 26, input));
-    std::cout << "Forward mapped to: " << map_to[index] << std::endl;
     
-    return map_to[index];
+    // adjust for position of the rotor during input
+    input = (input + position) % 26;
+    
+    // int index = std::distance(map_rtl, std::find(map_rtl, map_rtl + 26, input));
+    
+    input = map_rtl[input];
+    
+    // adjust for position of the rotor during output
+    input = (input - position) % 26;
+    
+    // account for rollover if input - position is negative
+    if(input < 0) {
+        input = input + 26;
+    }
+    
+    // std::cout << "Forward mapped to: " << input << std::endl;
+    
+    return input;
 
 }
 
@@ -201,11 +219,25 @@ int enigma::rotor::mapper(int input) {
 // rotor reflect mapper function
 int enigma::rotor::rf_mapper(int input) {
     
-    int index = std::distance(map_to, std::find(map_to, map_to + 26, input));
-        
-    std::cout << "Reflected index: " << map_from[index] << std::endl;
+    // adjust for position of the rotor during input
+    input = (input + position) % 26;
     
-    return map_from[index];
+    // int index = std::distance(map_ltr, std::find(map_ltr, map_ltr + 26, input));
+    
+    input = map_ltr[input];
+    
+    // adjust for position of the rotor during output
+    
+    input = (input - position) % 26;
+    
+    // account for rollover if input - position is negative
+    if(input < 0) {
+        input = input + 26;
+    }
+    
+    // std::cout << "Reflected index: " << input << std::endl;
+    
+    return input;
     
 }
 
@@ -219,18 +251,18 @@ enigma::reflector::reflector(const char* rf_filename) {
     int i = 0;
     while(rf_file >> rf_num) {
         if(i % 2 == 0) {
-            map_from[i/2] = rf_num;
+            map_rtl[i/2] = rf_num;
         }
         else if(i % 2 != 0) {
-            map_to[i/2] = rf_num;
+            map_ltr[i/2] = rf_num;
         }
         i++;
     }
     
-    // mirror map_from and map_to
+    // mirror map_rtl and map_ltr
     for(int i=0; i<13; i++) {
-        map_from[i + 13] = map_to[i];
-        map_to[i + 13] = map_from[i];
+        map_rtl[i + 13] = map_ltr[i];
+        map_ltr[i + 13] = map_rtl[i];
     }
     
     
@@ -244,9 +276,9 @@ enigma::reflector::reflector(const char* rf_filename) {
 // reflector mapper function
 int enigma::reflector::mapper(int input) {
     
-    int index = std::distance(map_from, std::find(map_from, map_from + 26, input));
+    int index = std::distance(map_rtl, std::find(map_rtl, map_rtl + 26, input));
     
-    return map_to[index];
+    return map_ltr[index];
 }
 
 
@@ -292,6 +324,87 @@ enigma::enigma(int argc, char** argv) {
     
     // load reflector
     rf = new reflector(rf_filename.c_str());
+    
+    output_string.clear();
+}
+
+
+// enigma encryptor function
+char enigma::encryptor(char letter) {
+    
+    int input = letter - 'A';
+    // std::cout << "Input is " << input << std::endl;
+        
+    input = pb->mapper(input);
+    
+    // std::cout << "After plugboard: " << input << std::endl;
+        
+    if(num_rotors > 0) {
+        // for rotor in rotors - but starting from rightmost
+        // a reverse iterator is used
+        
+        for(std::vector<enigma::rotor>::reverse_iterator rot = vec_rotors.rbegin(); rot != vec_rotors.rend(); ++rot) {
+            
+            // int rel_posn = rot->position - (rot-1)->position;
+            // std::cout << (rot-1)->position << std::endl;
+            
+            
+            if(rot->rightmost) {
+                rot->rotate();
+                // std::cout << "Hi rotated" << std::endl;
+                
+                // input = rot->mapper(input);
+            }
+            
+            else {
+                if( std::find(std::begin((rot-1)->triggers), std::end((rot-1)->triggers), 
+                        rot->position) != std::end((rot-1)->triggers) ) {
+                    
+                    rot->rotate();
+                    // std::cout << "Hi I rotated forwards" << std::endl;
+                
+                    }
+                    
+                    // input = rot->mapper(input - (rot - 1)->position);
+            }
+            
+            
+            input = rot->mapper(input);
+            
+            // input = (*rot).mapper(input, (*(rot - 1)).position);
+        }
+    }
+                
+    // std::cout << "After right to left rotors: " << input << std::endl;
+    
+    input = rf->mapper(input);
+    
+    // std::cout << "After reflector: " << input << std::endl;
+    
+    if(num_rotors > 0) {
+        // rotor after reflectors
+        
+        for(std::vector<enigma::rotor>::iterator rot = vec_rotors.begin(); rot != vec_rotors.end(); ++rot) {
+            
+            input = rot->rf_mapper(input);
+            
+            /*
+            if(rot->rightmost) {
+                input = rot->rf_mapper(input);
+            }
+            
+            else {
+                input = rot->rf_mapper(input + rot->position);
+            }
+            */
+        }
+    }
+    
+    // std::cout << "After left to right rotors, FINAL: " << input << std::endl;
+    // std::cout << "Input is " << input << std::endl;
+    
+    char letter_out = (char)('A' + input);
+    return letter_out;
 }
 
 
@@ -300,79 +413,21 @@ int main(int argc, char** argv) {
     // load components into enigma
     enigma en(argc, argv);
     
-    char letter_in;
     
-    while (std::cin >> std::ws >> letter_in) {
-        
-        int input = letter_in - 'A';
-        std::cout << "Input is " << input << std::endl;
-        
-        input = en.pb->mapper(input);
+    std::string line_in;
     
-        std::cout << "After plugboard: " << input << std::endl;
+    while(std::getline(std::cin, line_in)) {
         
-        if(en.num_rotors > 0) {
-            // for rotor in rotors - but starting from rightmost
-            // a reverse iterator is used
+        for(size_t i = 0; i != line_in.size(); i++) {
             
-            for(std::vector<enigma::rotor>::reverse_iterator rot = en.vec_rotors.rbegin(); rot != en.vec_rotors.rend(); ++rot) {
-                
-                int rel_posn = rot->position - (rot-1)->position;
-                std::cout << (rot-1)->position << std::endl;
-                
-                
-                if(rot->rightmost) {
-                    rot->rotate();
-                    std::cout << "Hi rotated" << std::endl;
-                    
-                    input = rot->mapper(input);
-                }
-                
-                else {
-                    if( std::find(std::begin((rot - 1)->triggers), std::end((rot - 1)->triggers), 
-                            rot->position) != std::end((rot - 1)->triggers) ) {
-                        
-                        rot->rotate();
-                        std::cout << "Hi I rotated forwards" << std::endl;
-                    
-                        }
-                        
-                        input = rot->mapper(input - (rot - 1)->position);
-                }
-                
-                // input = (*rot).mapper(input, (*(rot - 1)).position);
-            }
+            en.output_string.push_back(en.encryptor(line_in[i]));
+            
         }
         
+        std::cout << en.output_string << std::endl;
+        en.output_string.clear();
         
-        std::cout << "After right to left rotors: " << input << std::endl;
-        
-        input = en.rf->mapper(input);
-        
-        std::cout << "After reflector: " << input << std::endl;
-        
-        if(en.num_rotors > 0) {
-            // rotor after reflectors
-            
-            for(std::vector<enigma::rotor>::iterator rot = en.vec_rotors.begin(); rot != en.vec_rotors.end(); ++rot) {
-                if(rot->rightmost) {
-                    input = rot->rf_mapper(input);
-                }
-                
-                else {
-                    input = rot->rf_mapper(input + rot->position);
-                }
-                
-            }
-        }
-        
-        std::cout << "After left to right rotors, FINAL: " << input << std::endl;
-        // std::cout << "Input is " << input << std::endl;
-        
-        char letter_out = (char)('A' + input);
-        
-        std::cout << letter_out;
-        
-    }    
+    }
+    
     
 }
