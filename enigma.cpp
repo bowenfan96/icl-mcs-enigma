@@ -151,17 +151,17 @@ enigma::rotor::rotor(const char* rot_filename) {
 void enigma::rotor::rotate() {
     position = (position + 1) % 26;
     
-    std::cout << "Rotated" << std::endl;
+    // std::cout << "Rotated" << std::endl;
     
     if(std::find(triggers.begin(), triggers.end(), position) != triggers.end()) {
         
-        std::cout << "Triggered" << std::endl;
+        // std::cout << "Triggered" << std::endl;
         triggered = true;
     }
     
     else {
         
-        std::cout << "NOT triggered" << std::endl;
+        // std::cout << "NOT triggered" << std::endl;
         triggered = false;
     }
 }
@@ -309,11 +309,11 @@ char enigma::encryptor(char letter) {
     
     int input = letter - 'A';
     
-    std::cout << "Input is " << input << std::endl;
+    // std::cout << "Input is " << input << std::endl;
         
     input = pb->mapper(input);
     
-    std::cout << "After plugboard: " << input << std::endl;
+    // std::cout << "After plugboard: " << input << std::endl;
         
     if(num_rotors > 0) {
         // for rotor in rotors - but starting from rightmost
@@ -328,11 +328,11 @@ char enigma::encryptor(char letter) {
         }
     }
                 
-    std::cout << "After right to left rotors: " << input << std::endl;
+    // std::cout << "After right to left rotors: " << input << std::endl;
     
     input = rf->mapper(input);
     
-    std::cout << "After reflector: " << input << std::endl;
+    // std::cout << "After reflector: " << input << std::endl;
     
     if(num_rotors > 0) {
         // rotor after reflectors
@@ -344,7 +344,7 @@ char enigma::encryptor(char letter) {
         }
     }
     
-    std::cout << "After left to right rotors, FINAL: " << input << std::endl;
+    // std::cout << "After left to right rotors, FINAL: " << input << std::endl;
     
     char letter_out = (char)('A' + input);
     return letter_out;
@@ -361,13 +361,13 @@ void enigma::turn_rotors() {
         if(rot == vec_rotors.rbegin()) {
             rot->rotate();
             
-            std::cout << "Rotated 1" << std::endl;
+            // std::cout << "Rotated 1" << std::endl;
         }
         
         else if ((rot-1)->triggered) {
             rot->rotate();
             
-            std::cout << "Rotated 2" << std::endl;
+            // std::cout << "Rotated 2" << std::endl;
         }
     }
 }
