@@ -320,10 +320,10 @@ char enigma::encryptor(char letter) {
         // a reverse iterator is used
         
         //std::vector<enigma::rotor>::reverse_iterator
+        turn_rotors();
         
         for(auto rot = vec_rotors.rbegin(); rot != vec_rotors.rend(); ++rot) {
             
-            turn_rotors();
             input = rot->mapper(input);
         }
     }
@@ -356,9 +356,9 @@ void enigma::turn_rotors() {
     
     // vec_rotors.rbegin()->rotate();
     
-    for(auto rot = std::next(vec_rotors.rbegin()); rot != vec_rotors.rend(); ++rot) {
+    for(auto rot = vec_rotors.rbegin(); rot != vec_rotors.rend(); ++rot) {
         
-        if(rot->rightmost) {
+        if(rot == vec_rotors.rbegin()) {
             rot->rotate();
             
             std::cout << "Rotated 1" << std::endl;
