@@ -6,35 +6,10 @@
 #include <algorithm>
 
 
-
-
-
-
-/* Press A
- * plugboard makes A --> G
- * rotor 1 makes A --> B default, and in default position 0 (not displaced)
- * rotor 1 eg. BCDEFG
- * rotor 1 gets turned
- * now A --> C (CDEFGB)
- * map_ltr[i] = map_ltr[i+1]
- * 
- * so rotor 1 in position 2 (displaced 3 notches)
- * rotor 2 takes in F, unless rotor 1 displaces it
- * e.g F --> X in rotor 2
- * reflector maps X to N
- * N goes into reverse mapping rotor
- * 
- * Reverse mapping rotor:
- * search rotor index corresponding to the letter
- * mapped to same alphabet index
-*/
-
-
-
 // enigma class to incorporate all the components
 class enigma {
 public:
-    
+
     
     class plugboard {
     public:
@@ -74,9 +49,11 @@ public:
         int mapper(int);
     };
     
+    
     enigma(int, char**);
     
     char encryptor(char);
+    void turn_rotors();
     
     int num_rotors;
     
@@ -159,16 +136,6 @@ enigma::rotor::rotor(const char* rot_filename) {
     // init position to 0 for now
     position = 0;
     
-    /*
-    for(int i=0; i<position; i++) {
-        int swap = map_rtl[25];
-        for(int j=0; j<25; j++) {
-            map_rtl[j+1] = map_rtl[j];
-        }
-        map_ltr[0] = swap;
-    }
-    */
-    
     rightmost = false;
     
     
@@ -180,13 +147,6 @@ enigma::rotor::rotor(const char* rot_filename) {
 
 // rotor rotate function
 void enigma::rotor::rotate() {
-    /*
-    int swap = map_rtl[25];
-    for(int j=0; j<25; j++) {
-        map_rtl[j+1] = map_rtl[j];
-    }
-    map_rtl[0] = swap;
-    */
     position++;
     
 }
@@ -345,33 +305,11 @@ char enigma::encryptor(char letter) {
         
         for(std::vector<enigma::rotor>::reverse_iterator rot = vec_rotors.rbegin(); rot != vec_rotors.rend(); ++rot) {
             
-            // int rel_posn = rot->position - (rot-1)->position;
-            // std::cout << (rot-1)->position << std::endl;
             
-            
-            if(rot->rightmost) {
-                rot->rotate();
-                // std::cout << "Hi rotated" << std::endl;
-                
-                // input = rot->mapper(input);
-            }
-            
-            else {
-                if( std::find(std::begin((rot-1)->triggers), std::end((rot-1)->triggers), 
-                        rot->position) != std::end((rot-1)->triggers) ) {
-                    
-                    rot->rotate();
-                    // std::cout << "Hi I rotated forwards" << std::endl;
-                
-                    }
-                    
-                    // input = rot->mapper(input - (rot - 1)->position);
-            }
             
             
             input = rot->mapper(input);
             
-            // input = (*rot).mapper(input, (*(rot - 1)).position);
         }
     }
                 
@@ -407,6 +345,29 @@ char enigma::encryptor(char letter) {
     return letter_out;
 }
 
+
+// enigma turn rotors function
+void turn_rotors() {
+    
+    if(rot->rightmost) {
+        rot->rotate();
+        
+        std::cout << "Hi rotated" << std::endl;
+        
+    }
+    
+    else {
+        if( std::find(std::begin((rot-1)->triggers), std::end((rot-1)->triggers), 
+                rot->position) != std::end((rot-1)->triggers) ) {
+            
+            rot->rotate();
+            
+        std::cout << "Hi rotated" << std::endl;
+        
+        }
+    }
+    
+}
 
 int main(int argc, char** argv) {
     
