@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <cctype>
 #include <array>
+#include <unordered_set>
 
 #include "errors.h"
 
@@ -33,8 +34,8 @@ public:
         
         int position;
         
-        std::array<int, 26> map_rtl;
-        std::array<int, 26> map_ltr;
+        std::vector<int> map_rtl;
+        std::vector<int> map_ltr;
         
         // int map_rtl[26];
         // int map_ltr[26];
@@ -52,8 +53,8 @@ public:
     public:
         reflector(const char*);
         
-        std::array<int, 26> map_from;
-        std::array<int, 26> map_to;
+        std::vector<int> map_from;
+        std::vector<int> map_to;
 
         // int map_from[26];
         // int map_to[26];
@@ -81,7 +82,7 @@ public:
     std::string output_string;
     
     static bool is_valid(const std::string&);
-    static bool is_one_to_one(const int*, const int*);
+    static bool is_one_to_one(const std::vector<int>&, const std::vector<int>&);
 
 };
 
@@ -115,11 +116,16 @@ enigma::plugboard::plugboard(const char* pb_filename)
             }
         }
         
-        if(i % 2 != 0) {
+        // check correct config (one to one mapping, no value to itself)
+        if(!is_one_to_one(map_from, map_to)) {
+            throw IMPOSSIBLE_PLUGBOARD_CONFIGURATION;
+        }
+        
+        if( (i % 2 != 0) || (i > 26) ) {
             throw INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS;
         }
         
-        // mirror the mapping arrays
+        // mirror the mapping vectors
         std::vector<int> swap = map_from;
         map_from.insert(map_from.end(), map_to.begin(), map_to.end());
         map_to.insert(map_to.end(), swap.begin(), swap.end());
@@ -131,10 +137,11 @@ enigma::plugboard::plugboard(const char* pb_filename)
     }
     
     
-    // Check if number maps to itself
-    // Check if odd number of numbers
-    // Check if number is a valid alphabet (0 to 25)
-    // Check if inputs are all numbers
+    
+    // Check if number maps to itself - done
+    // Check if odd number of numbers - done
+    // Check if number is a valid alphabet (0 to 25) - done
+    // Check if inputs are all numbers - done
     
 }
 
@@ -185,6 +192,19 @@ enigma::rotor::rotor(const char* rot_filename)
             }
         }
         
+        // check mapping is correct
+        int size = map_rtl.size();
+        
+        if(size < 25) {
+            throw INVALID_ROTOR_MAPPING;
+        }
+        std::unordered_set<int> set;
+        for(int i=0; i < size; i++) {
+            if(!set.insert(map_rtl[i]).second) {
+                throw INVALID_ROTOR_MAPPING;
+            }
+        }
+        
         // set position 0 until enigma constructor turns the rotor after reading pos file
         position = 0;
         
@@ -196,9 +216,9 @@ enigma::rotor::rotor(const char* rot_filename)
         throw ERROR_OPENING_CONFIGURATION_FILE;
     }
     
-    // Check input mapping is one to one, and all inputs are mapped
-    // Check all numbers are 0 to 25
-    // Check if inputs are all numbers
+    // Check input mapping is one to one, and all inputs are mapped - done
+    // Check all numbers are 0 to 25 - done
+    // Check if inputs are all numbers - done
     // Check rotor starting position
 }
 
@@ -295,26 +315,30 @@ enigma::reflector::reflector(const char* rf_filename)
                 rf_num = std::stoi(index, &sz);
                 
                 if(i % 2 == 0) {
-                    map_from[i/2] = rf_num;
+                    map_from.push_back(rf_num);
                     j++;
                 }
                 else {
-                    map_to[i/2] = rf_num;
+                    map_to.push_back(rf_num);
                     k++;
                 }
                 i++;
             }
         }
         
-        if( (map_from.size() != map_to.size()) || (map_from.size() != 13) ) {
+        // check correct config (one to one mapping, no value to itself)
+        if(!is_one_to_one(map_from, map_to)) {
+            throw IMPOSSIBLE_PLUGBOARD_CONFIGURATION;
+        }
+        
+        if( (j != k) || (j != 13) ) {
             throw INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS;
         }
         
-        // mirror the mapping arrays
-        for(int i=0; i<13; i++) {
-            map_from[i + 13] = map_to[i];
-            map_to[i + 13] = map_from[i];
-        }
+        // mirror the mapping vectors
+        std::vector<int> swap = map_from;
+        map_from.insert(map_from.end(), map_to.begin(), map_to.end());
+        map_to.insert(map_to.end(), swap.begin(), swap.end());
     }
     
     // check if file open failed
@@ -324,10 +348,10 @@ enigma::reflector::reflector(const char* rf_filename)
     
     
     
-    // Check input is not mapped to itself and is one to one
-    // Check 13 pairs
-    // Check all numbers are 0 to 25
-    // Check if inputs are all numbers
+    // Check input is not mapped to itself and is one to one - done
+    // Check 13 pairs - done
+    // Check all numbers are 0 to 25 - done
+    // Check if inputs are all numbers - done
     
 }
 
@@ -335,7 +359,7 @@ enigma::reflector::reflector(const char* rf_filename)
 int enigma::reflector::mapper(int input) 
 {
     
-    int index = std::distance(map_from, std::find(map_from, map_from + 26, input));
+    int index = std::distance(map_from.cbegin(), std::find(map_from.cbegin(), map_from.cend(), input));
     
     return map_to[index];
 }
@@ -486,20 +510,35 @@ bool enigma::is_valid(const std::string& index)
     return true;
 }
 
-/*
-bool enigma::is_one_to_one(const int* map_from, const int* map_to) 
+
+bool enigma::is_one_to_one(const std::vector<int>& map_from, const std::vector<int>& map_to) 
 {
     // check if both arrays contain only unique elements
     int sz = map_from.size();
     
     std::unordered_set<int> set1;
     for(int i=0; i < sz; i++) {
-        if(!set.insert(map_from[i]).second) {
-            return 0;
+        if(!set1.insert(map_from[i]).second) {
+            return false;
         }
     }
+    std::unordered_set<int> set2;
+    for(int i=0; i < sz; i++) {
+        if(!set2.insert(map_to[i]).second) {
+            return false;
+        }
+    }
+    
+    // check if an index maps to itself
+    for(int i=0; i < sz; i++) {
+        if(map_from.at(i) == map_to.at(i)) {
+            return false;
+        }
+    }
+    
+    return true;
 }
-*/
+
 
 int main(int argc, char** argv) 
 {
