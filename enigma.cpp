@@ -4,11 +4,15 @@
 #include <cstring>
 #include <string>
 #include <algorithm>
+#include <cctype>
+#include <array>
 
 #include "errors.h"
 
+
 // enigma class to incorporate all the components
-class enigma {
+class enigma 
+{
 public:
 
     
@@ -28,8 +32,12 @@ public:
         
         
         int position;
-        int map_rtl[26];
-        int map_ltr[26];
+        
+        std::array<int, 26> map_rtl;
+        std::array<int, 26> map_ltr;
+        
+        // int map_rtl[26];
+        // int map_ltr[26];
         
         std::vector<int> triggers;
         bool triggered;
@@ -43,8 +51,12 @@ public:
     class reflector {
     public:
         reflector(const char*);
-        int map_from[26];
-        int map_to[26];
+        
+        std::array<int, 26> map_from;
+        std::array<int, 26> map_to;
+
+        // int map_from[26];
+        // int map_to[26];
         
         int mapper(int);
     };
@@ -67,30 +79,57 @@ public:
     reflector* rf = NULL;
     
     std::string output_string;
+    
+    static bool is_valid(const std::string&);
+    static bool is_one_to_one(const int*, const int*);
+
 };
 
 
 // plugboard constructor
-enigma::plugboard::plugboard(const char* pb_filename) {
+enigma::plugboard::plugboard(const char* pb_filename) 
+{
     std::ifstream pb_file;
     pb_file.open(pb_filename);
     
-    int pb_num;
-    int i = 0;
-    while(pb_file >> pb_num) {
-        if(i % 2 == 0) {
-            map_from.push_back(pb_num);
+    if(pb_file.is_open()) {
+        
+        std::string index;
+        int pb_num;
+        int i = 0;
+        size_t sz;
+        
+        while(std::getline(pb_file, index, ' ')) {
+            
+            if(is_valid(index)) {
+                
+                pb_num = std::stoi(index, &sz);
+                
+                if(i % 2 == 0) {
+                    map_from.push_back(pb_num);
+                }
+                else {
+                    map_to.push_back(pb_num);
+                }
+                i++;
+            }
         }
-        else if(i % 2 != 0) {
-            map_to.push_back(pb_num);
+        
+        if(i % 2 != 0) {
+            throw INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS;
         }
-        i++;
+        
+        // mirror the mapping arrays
+        std::vector<int> swap = map_from;
+        map_from.insert(map_from.end(), map_to.begin(), map_to.end());
+        map_to.insert(map_to.end(), swap.begin(), swap.end());
     }
     
-    // mirror the mapping arrays
-    std::vector<int> swap = map_from;
-    map_from.insert(map_from.end(), map_to.begin(), map_to.end());
-    map_to.insert(map_to.end(), swap.begin(), swap.end());
+    // check if file open failed
+    else {
+        throw ERROR_OPENING_CONFIGURATION_FILE;
+    }
+    
     
     // Check if number maps to itself
     // Check if odd number of numbers
@@ -100,7 +139,8 @@ enigma::plugboard::plugboard(const char* pb_filename) {
 }
 
 // plugboard mapper function
-int enigma::plugboard::mapper(int input) {
+int enigma::plugboard::mapper(int input) 
+{
     
     auto iter = std::find(map_from.cbegin(), map_from.cend(), input);
     
@@ -116,29 +156,45 @@ int enigma::plugboard::mapper(int input) {
 
 
 // rotor constructor
-enigma::rotor::rotor(const char* rot_filename) {
+enigma::rotor::rotor(const char* rot_filename) 
+{
     std::ifstream rot_file;
     rot_file.open(rot_filename);
     
-    int rot_num;
-    int i = 0;
-    while(rot_file >> rot_num) {
-        if(i <= 25) {
-            map_rtl[i] = rot_num;
-            map_ltr[rot_num] = i;
+    if(rot_file.is_open()) {
+        
+        std::string index;
+        int rot_num;
+        int i = 0;
+        size_t sz;
+        
+        while(std::getline(rot_file, index, ' ')) {
+            
+            if(is_valid(index)) {
+                
+                rot_num = std::stoi(index, &sz);
+                
+                if(i <= 25) {
+                    map_rtl[i] = rot_num;
+                    map_ltr[rot_num] = i;
+                }
+                else {
+                    triggers.push_back(rot_num);
+                }
+                i++;
+            }
         }
-        else {
-            triggers.push_back(rot_num);
-        }
-        i++;
+        
+        // set position 0 until enigma constructor turns the rotor after reading pos file
+        position = 0;
+        
+        triggered = false;
     }
     
-    // do offset by position
-    // init position to 0 for now
-    position = 0;
-    
-    triggered = false;
-    
+    // check if file open failed
+    else {
+        throw ERROR_OPENING_CONFIGURATION_FILE;
+    }
     
     // Check input mapping is one to one, and all inputs are mapped
     // Check all numbers are 0 to 25
@@ -147,7 +203,8 @@ enigma::rotor::rotor(const char* rot_filename) {
 }
 
 // rotor rotate function
-void enigma::rotor::rotate() {
+void enigma::rotor::rotate() 
+{
     position = (position + 1) % 26;
     
     // std::cout << "Rotated" << std::endl;
@@ -166,7 +223,8 @@ void enigma::rotor::rotate() {
 }
 
 // rotor mapper function
-int enigma::rotor::mapper(int input) {
+int enigma::rotor::mapper(int input) 
+{
     
     // adjust for position of the rotor during input
     input = (input + position) % 26;
@@ -191,7 +249,8 @@ int enigma::rotor::mapper(int input) {
 
 
 // rotor reflect mapper function
-int enigma::rotor::rf_mapper(int input) {
+int enigma::rotor::rf_mapper(int input) 
+{
     
     // adjust for position of the rotor during input
     input = (input + position) % 26;
@@ -217,27 +276,52 @@ int enigma::rotor::rf_mapper(int input) {
 
 
 // reflector constructor
-enigma::reflector::reflector(const char* rf_filename) {
+enigma::reflector::reflector(const char* rf_filename) 
+{
     std::ifstream rf_file;
     rf_file.open(rf_filename);
     
-    int rf_num;
-    int i = 0;
-    while(rf_file >> rf_num) {
-        if(i % 2 == 0) {
-            map_from[i/2] = rf_num;
+    if(rf_file.is_open()) {
+        
+        std::string index;
+        int rf_num;
+        int i = 0, j = 0, k = 0;
+        size_t sz;
+        
+        while(std::getline(rf_file, index, ' ')) {
+            
+            if(is_valid(index)) {
+                
+                rf_num = std::stoi(index, &sz);
+                
+                if(i % 2 == 0) {
+                    map_from[i/2] = rf_num;
+                    j++;
+                }
+                else {
+                    map_to[i/2] = rf_num;
+                    k++;
+                }
+                i++;
+            }
         }
-        else if(i % 2 != 0) {
-            map_to[i/2] = rf_num;
+        
+        if( (map_from.size() != map_to.size()) || (map_from.size() != 13) ) {
+            throw INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS;
         }
-        i++;
+        
+        // mirror the mapping arrays
+        for(int i=0; i<13; i++) {
+            map_from[i + 13] = map_to[i];
+            map_to[i + 13] = map_from[i];
+        }
     }
     
-    // mirror map_from and map_to
-    for(int i=0; i<13; i++) {
-        map_from[i + 13] = map_to[i];
-        map_to[i + 13] = map_from[i];
+    // check if file open failed
+    else {
+        throw ERROR_OPENING_CONFIGURATION_FILE;
     }
+    
     
     
     // Check input is not mapped to itself and is one to one
@@ -248,7 +332,8 @@ enigma::reflector::reflector(const char* rf_filename) {
 }
 
 // reflector mapper function
-int enigma::reflector::mapper(int input) {
+int enigma::reflector::mapper(int input) 
+{
     
     int index = std::distance(map_from, std::find(map_from, map_from + 26, input));
     
@@ -257,7 +342,14 @@ int enigma::reflector::mapper(int input) {
 
 
 // enigma constructor
-enigma::enigma(int argc, char** argv) {
+enigma::enigma(int argc, char** argv) 
+{
+    
+    // Minimum 3 parameters: 0 rotors, 1 plugboard, 1 reflector, 1 position
+    // Check if there are 3 or more parameters supplied: argc >= 4
+    if(argc < 4) {
+        throw INSUFFICIENT_NUMBER_OF_PARAMETERS;
+    }
     
     std::string pb_filename;
     std::string rf_filename;
@@ -267,6 +359,7 @@ enigma::enigma(int argc, char** argv) {
     pb_filename = argv[1];
     rf_filename = argv[2];
     
+    // check if there are rotor(s), then load them
     num_rotors = 0;
     
     if(argc > 4) {
@@ -280,7 +373,6 @@ enigma::enigma(int argc, char** argv) {
     
     // load plugboard
     pb = new plugboard(pb_filename.c_str());
-    
     
     // load rotor positions
     std::ifstream pos_file;
@@ -299,16 +391,14 @@ enigma::enigma(int argc, char** argv) {
         }
     }
     
-    
     // load reflector
     rf = new reflector(rf_filename.c_str());
-    
-    output_string.clear();
 }
 
 
 // enigma encryptor function
-char enigma::encryptor(char letter) {
+char enigma::encryptor(char letter) 
+{
     
     int input = letter - 'A';
     
@@ -357,7 +447,8 @@ char enigma::encryptor(char letter) {
 
 
 // enigma turn rotors function
-void enigma::turn_rotors() {
+void enigma::turn_rotors() 
+{
     
     // vec_rotors.rbegin()->rotate();
     
@@ -378,18 +469,62 @@ void enigma::turn_rotors() {
 }
 
 
-int main(int argc, char** argv) {
+bool enigma::is_valid(const std::string& index)
+{
+    for(auto ch : index) {
+        if(!isdigit(ch) && !isspace(ch)) {
+            throw NON_NUMERIC_CHARACTER;
+        }
+    }
     
+    size_t sz;
+    int num = std::stoi(index, &sz);
+    if(num < 0 || num > 25) {
+        throw INVALID_INDEX;
+    }
+    
+    return true;
+}
+
+/*
+bool enigma::is_one_to_one(const int* map_from, const int* map_to) 
+{
+    // check if both arrays contain only unique elements
+    int sz = map_from.size();
+    
+    std::unordered_set<int> set1;
+    for(int i=0; i < sz; i++) {
+        if(!set.insert(map_from[i]).second) {
+            return 0;
+        }
+    }
+}
+*/
+
+int main(int argc, char** argv) 
+{
     // load components into enigma
-    enigma en(argc, argv);
+    try {
+        enigma en(argc, argv);
+        
+        char input;
+        while(std::cin >> std::ws >> input) {
+            if(isupper(input)) {
+                std::cout << en.encryptor(input) << std::flush;
+            }
+            else {
+                throw INVALID_INPUT_CHARACTER;
+            }
+        }
+    }
     
-    char input;
-    while(std::cin >> std::ws >> input) {
-        std::cout << en.encryptor(input);
+    catch(int error) {
+        std::cout << "Error code: " << error << std::endl;;
+        return error;
     }
     
     
-    
+
     /*
     std::string line_in;
     
@@ -408,7 +543,7 @@ int main(int argc, char** argv) {
     }
     */
     
-    return (NO_ERROR);
+    return(NO_ERROR);
     
     
 }
