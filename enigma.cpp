@@ -5,6 +5,7 @@
 #include <string>
 #include <algorithm>
 
+#include "errors.h"
 
 // enigma class to incorporate all the components
 class enigma {
@@ -389,7 +390,7 @@ int main(int argc, char** argv) {
         
         for(size_t i = 0; i != line_in.size(); i++) {
             
-            std::cout << en.encryptor(line_in[i]);
+            std::cout << en.encryptor(line_in[i]) << std::flush;
             // en.output_string.push_back(en.encryptor(line_in[i]));
             
         }
@@ -399,7 +400,7 @@ int main(int argc, char** argv) {
         
     }
     
-    return ("NO_ERROR");
+    return (NO_ERROR);
     
     
 }
