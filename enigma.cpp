@@ -558,7 +558,7 @@ int main(int argc, char** argv)
     }
     
     catch(int error) {
-        std::cout << "Error code: " << error << std::endl;;
+        // std::cout << "Error code: " << error << std::endl;;
         return error;
     }
     
