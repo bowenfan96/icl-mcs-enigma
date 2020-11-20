@@ -389,7 +389,7 @@ int main(int argc, char** argv) {
         
         for(size_t i = 0; i != line_in.size(); i++) {
             
-            std::cerr << en.encryptor(line_in[i]);
+            std::cout << en.encryptor(line_in[i]);
             // en.output_string.push_back(en.encryptor(line_in[i]));
             
         }
@@ -399,7 +399,7 @@ int main(int argc, char** argv) {
         
     }
     
-    return 0;
+    return ("NO_ERROR");
     
     
 }
