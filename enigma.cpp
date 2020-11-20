@@ -34,8 +34,8 @@ public:
         
         int position;
         
-        std::vector<int> map_rtl;
-        std::vector<int> map_ltr;
+        std::array<int, 26> map_rtl;
+        std::array<int, 26> map_ltr;
         
         // int map_rtl[26];
         // int map_ltr[26];
