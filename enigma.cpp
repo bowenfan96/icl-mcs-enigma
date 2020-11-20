@@ -383,10 +383,17 @@ int main(int argc, char** argv) {
     // load components into enigma
     enigma en(argc, argv);
     
+    char input;
+    while(std::cin >> std::ws >> input) {
+        std::cout << en.encryptor(input);
+    }
     
+    
+    
+    /*
     std::string line_in;
     
-    while(std::getline(std::cin, line_in)) {
+    while(std::getline(std::cin >> std::ws, line_in)) {
         
         for(size_t i = 0; i != line_in.size(); i++) {
             
@@ -399,6 +406,7 @@ int main(int argc, char** argv) {
         en.output_string.clear();
         
     }
+    */
     
     return (NO_ERROR);
     
