@@ -8,84 +8,8 @@
 #include <array>
 #include <unordered_set>
 
+#include "enigma.h"
 #include "errors.h"
-
-
-// enigma class to incorporate all the components
-class enigma 
-{
-public:
-
-    
-    class plugboard {
-    public:
-        plugboard(const char*);
-        std::vector<int> map_from;
-        std::vector<int> map_to;
-        int mapper(int);
-    };
-
-
-    class rotor {
-    public:
-        
-        rotor(const char*);
-        
-        
-        int position;
-        
-        std::array<int, 26> map_rtl;
-        std::array<int, 26> map_ltr;
-        
-        // int map_rtl[26];
-        // int map_ltr[26];
-        
-        std::vector<int> triggers;
-        bool triggered;
-        
-        void rotate();
-        int mapper(int);
-        int rf_mapper(int);
-    };
-    
-    
-    class reflector {
-    public:
-        reflector(const char*);
-        
-        std::vector<int> map_from;
-        std::vector<int> map_to;
-
-        // int map_from[26];
-        // int map_to[26];
-        
-        int mapper(int);
-    };
-    
-    
-    enigma(int, char**);
-    
-    char encryptor(char);
-    void turn_rotors();
-    
-    int num_rotors;
-    
-    // rotors loaded as leftmost being element 0
-    std::vector<rotor> vec_rotors;
-    
-    // vector of rotor positions
-    std::vector<int> vec_rot_posn;
-    
-    plugboard* pb = NULL;
-    reflector* rf = NULL;
-    
-    std::string output_string;
-    
-    static bool is_valid(const std::string&);
-    static bool is_one_to_one(const std::vector<int>&, const std::vector<int>&);
-
-};
-
 
 // plugboard constructor
 enigma::plugboard::plugboard(const char* pb_filename) 
@@ -121,13 +45,10 @@ enigma::plugboard::plugboard(const char* pb_filename)
             }
         }
         
-        // std::cout << "map_from size: " << map_from.size() << std::endl;
-        
-        // std::cout << "map_to size: " << map_to.size() << std::endl;
-        
         // check correct config (1 to 1 mapping, no value to itself)
         if(map_from.size() != 0) {
             if(map_to.size() == 0) {
+                std::cerr << "Incorrect number of parameters in plugboard file (odd number of parameters less than 26)";
                 throw INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS;
             }
             if(!is_one_to_one(map_from, map_to)) {
@@ -150,14 +71,6 @@ enigma::plugboard::plugboard(const char* pb_filename)
     else {
         throw ERROR_OPENING_CONFIGURATION_FILE;
     }
-    
-    
-    
-    // Check if number maps to itself - done
-    // Check if odd number of numbers - done
-    // Check if number is a valid alphabet (0 to 25) - done
-    // Check if inputs are all numbers - done
-    
 }
 
 // plugboard mapper function
@@ -621,26 +534,5 @@ int main(int argc, char** argv)
     }
     
     
-
-    /*
-    std::string line_in;
-    
-    while(std::getline(std::cin >> std::ws, line_in)) {
-        
-        for(size_t i = 0; i != line_in.size(); i++) {
-            
-            std::cout << en.encryptor(line_in[i]) << std::flush;
-            // en.output_string.push_back(en.encryptor(line_in[i]));
-            
-        }
-        
-        std::cout << std::endl;
-        en.output_string.clear();
-        
-    }
-    */
-    
     return(NO_ERROR);
-    
-    
 }
