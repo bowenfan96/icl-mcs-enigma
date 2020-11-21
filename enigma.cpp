@@ -137,7 +137,7 @@ enigma::rotor::rotor(const char* rot_filename)
         for(int j=0; j < 26; j++) {
             auto chk_err = set.insert(map_rtl[j]);
             if(!chk_err.second) {
-                std::cerr << "Invalid mapping of input " << j << " to output " << map_rtl[j] << " (output " << map_rtl[j] << " is already mapped to from input " << *(chk_err.first) << " ) in rotor file: " << rot_filename << "\n";
+                std::cerr << "Invalid mapping of input " << j << " to output " << map_rtl[j] << " (output " << map_rtl[j] << " is already mapped to from input " << map_rtl[map_rtl[j]] << ") in rotor file: " << rot_filename << "\n";
                 throw INVALID_ROTOR_MAPPING;
             }
         }
