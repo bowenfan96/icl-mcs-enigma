@@ -205,7 +205,7 @@ enigma::rotor::rotor(const char* rot_filename)
         }
         // check all numbers are unique
         std::unordered_set<int> set;
-        for(int j=0; j < i; j++) {
+        for(int j=0; j < 26; j++) {
             if(!set.insert(map_rtl[j]).second) {
                 throw INVALID_ROTOR_MAPPING;
             }
@@ -570,7 +570,7 @@ int main(int argc, char** argv)
     }
     
     catch(int error) {
-        // std::cout << "Error code: " << error << std::endl;
+        std::cout << "Error code: " << error << std::endl;
         return error;
     }
     
