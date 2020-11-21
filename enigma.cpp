@@ -116,9 +116,9 @@ enigma::plugboard::plugboard(const char* pb_filename)
             }
         }
         
-        std::cout << "map_from size: " << map_from.size() << std::endl;
+        // std::cout << "map_from size: " << map_from.size() << std::endl;
         
-        std::cout << "map_to size: " << map_to.size() << std::endl;
+        // std::cout << "map_to size: " << map_to.size() << std::endl;
         
         // check correct config (1 to 1 mapping, no value to itself)
         if(map_from.size() != 0) {
