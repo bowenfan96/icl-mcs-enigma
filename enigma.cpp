@@ -116,12 +116,18 @@ enigma::plugboard::plugboard(const char* pb_filename)
             }
         }
         
-        // check correct config (one to one mapping, no value to itself)
-        if(!is_one_to_one(map_from, map_to)) {
-            throw IMPOSSIBLE_PLUGBOARD_CONFIGURATION;
+        // check correct config (1 to 1 mapping, no value to itself)
+        if(map_from.size() != 0) {
+            if(map_to.size() == 0) {
+                throw INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS;
+            }
+            else if(!is_one_to_one(map_from, map_to)) {
+                throw IMPOSSIBLE_PLUGBOARD_CONFIGURATION;
+            }
         }
         
-        if( (i % 2 != 0) || (i > 26) ) {
+        // check odd number of parameters or more than 13 pairings
+        else if(map_from.size() != map_to.size() || map_from.size() > 13) {
             throw INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS;
         }
         
@@ -193,14 +199,14 @@ enigma::rotor::rotor(const char* rot_filename)
         }
         
         // check mapping is correct
-        int size = map_rtl.size();
-        
-        if(size < 25) {
+        // check 26 numbers given in rotor file
+        if(i < 26) {
             throw INVALID_ROTOR_MAPPING;
         }
+        // check all numbers are unique
         std::unordered_set<int> set;
-        for(int i=0; i < size; i++) {
-            if(!set.insert(map_rtl[i]).second) {
+        for(int j=0; j < i; j++) {
+            if(!set.insert(map_rtl[j]).second) {
                 throw INVALID_ROTOR_MAPPING;
             }
         }
@@ -326,12 +332,18 @@ enigma::reflector::reflector(const char* rf_filename)
             }
         }
         
-        // check correct config (one to one mapping, no value to itself)
-        if(!is_one_to_one(map_from, map_to)) {
-            throw IMPOSSIBLE_PLUGBOARD_CONFIGURATION;
+        // check reflector is not empty or contain only 1 parameter
+        if(map_from.size() == 0 || map_to.size() == 0) {
+            throw INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS;
         }
         
-        if( (j != k) || (j != 13) ) {
+        // check correct config (1 to 1 mapping, no value to itself)
+        if(!is_one_to_one(map_from, map_to)) {
+            throw INVALID_REFLECTOR_MAPPING;
+        }
+        
+        // check exactly 13 pairings
+        if(map_from.size() != 13 || map_to.size() != 13) {
             throw INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS;
         }
         
@@ -558,7 +570,7 @@ int main(int argc, char** argv)
     }
     
     catch(int error) {
-        // std::cout << "Error code: " << error << std::endl;;
+        // std::cout << "Error code: " << error << std::endl;
         return error;
     }
     
