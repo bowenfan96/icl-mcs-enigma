@@ -48,16 +48,18 @@ enigma::plugboard::plugboard(const char* pb_filename)
         // check correct config (1 to 1 mapping, no value to itself)
         if(map_from.size() != 0) {
             if(map_to.size() == 0) {
-                std::cerr << "Incorrect number of parameters in plugboard file (odd number of parameters less than 26)";
+                std::cerr << "Incorrect number of parameters in plugboard file " << pb_filename;
                 throw INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS;
             }
             if(!is_one_to_one(map_from, map_to)) {
+                std::cerr << "Malformed contact points (not linked 1 to 1) in plugboard file " << pb_filename;
                 throw IMPOSSIBLE_PLUGBOARD_CONFIGURATION;
             }
         }
         
         // check odd number of parameters or more than 13 pairings
         if(map_from.size() != map_to.size() || map_from.size() > 13) {
+            std::cerr << "Incorrect number of parameters in plugboard file " << pb_filename;
             throw INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS;
         }
         
@@ -69,6 +71,7 @@ enigma::plugboard::plugboard(const char* pb_filename)
     
     // check if file open failed
     else {
+        std::cerr << "Plugboard file " << pb_filename << " supplied cannot be opened";
         throw ERROR_OPENING_CONFIGURATION_FILE;
     }
 }
