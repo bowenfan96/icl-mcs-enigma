@@ -102,17 +102,22 @@ enigma::plugboard::plugboard(const char* pb_filename)
         
         while(std::getline(pb_file, index, ' ')) {
             
-            if(is_valid(index)) {
+            // std::cout << index;
+            
+            if(std::find_if(index.begin(), index.end(), ::isspace) == index.end()) {
                 
-                pb_num = std::stoi(index, &sz);
+                if(is_valid(index)) {
                 
-                if(i % 2 == 0) {
-                    map_from.push_back(pb_num);
+                    pb_num = std::stoi(index, &sz);
+                    
+                    if(i % 2 == 0) {
+                        map_from.push_back(pb_num);
+                    }
+                    else {
+                        map_to.push_back(pb_num);
+                    }
+                    i++;
                 }
-                else {
-                    map_to.push_back(pb_num);
-                }
-                i++;
             }
         }
         
@@ -186,19 +191,21 @@ enigma::rotor::rotor(const char* rot_filename)
         size_t sz;
         
         while(std::getline(rot_file, index, ' ')) {
+            if(std::find_if(index.begin(), index.end(), ::isspace) == index.end()) {
             
-            if(is_valid(index)) {
-                
-                rot_num = std::stoi(index, &sz);
-                
-                if(i <= 25) {
-                    map_rtl[i] = rot_num;
-                    map_ltr[rot_num] = i;
+                if(is_valid(index)) {
+                    
+                    rot_num = std::stoi(index, &sz);
+                    
+                    if(i <= 25) {
+                        map_rtl[i] = rot_num;
+                        map_ltr[rot_num] = i;
+                    }
+                    else {
+                        triggers.push_back(rot_num);
+                    }
+                    i++;
                 }
-                else {
-                    triggers.push_back(rot_num);
-                }
-                i++;
             }
         }
         
@@ -319,20 +326,22 @@ enigma::reflector::reflector(const char* rf_filename)
         size_t sz;
         
         while(std::getline(rf_file, index, ' ')) {
+            if(std::find_if(index.begin(), index.end(), ::isspace) == index.end()) {
             
-            if(is_valid(index)) {
-                
-                rf_num = std::stoi(index, &sz);
-                
-                if(i % 2 == 0) {
-                    map_from.push_back(rf_num);
-                    j++;
+                if(is_valid(index)) {
+                    
+                    rf_num = std::stoi(index, &sz);
+                    
+                    if(i % 2 == 0) {
+                        map_from.push_back(rf_num);
+                        j++;
+                    }
+                    else {
+                        map_to.push_back(rf_num);
+                        k++;
+                    }
+                    i++;
                 }
-                else {
-                    map_to.push_back(rf_num);
-                    k++;
-                }
-                i++;
             }
         }
         
@@ -512,7 +521,7 @@ void enigma::turn_rotors()
 bool enigma::is_valid(const std::string& index)
 {
     for(auto ch : index) {
-        if(!isdigit(ch) && !isspace(ch)) {
+        if(!isdigit(ch)) {
             throw NON_NUMERIC_CHARACTER;
         }
     }
