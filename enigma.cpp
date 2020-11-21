@@ -102,9 +102,9 @@ enigma::plugboard::plugboard(const char* pb_filename)
         
         while(std::getline(pb_file, index, ' ')) {
             
-            // std::cout << index;
+            index.erase(std::remove_if(index.begin(), index.end(), ::isspace), index.end());
             
-            if(std::find_if(index.begin(), index.end(), ::isspace) == index.end()) {
+            if(!index.empty()) {
                 
                 if(is_valid(index)) {
                 
@@ -191,7 +191,10 @@ enigma::rotor::rotor(const char* rot_filename)
         size_t sz;
         
         while(std::getline(rot_file, index, ' ')) {
-            if(std::find_if(index.begin(), index.end(), ::isspace) == index.end()) {
+            
+            index.erase(std::remove_if(index.begin(), index.end(), ::isspace), index.end());
+            
+            if(!index.empty()) {
             
                 if(is_valid(index)) {
                     
@@ -326,7 +329,10 @@ enigma::reflector::reflector(const char* rf_filename)
         size_t sz;
         
         while(std::getline(rf_file, index, ' ')) {
-            if(std::find_if(index.begin(), index.end(), ::isspace) == index.end()) {
+            
+            index.erase(std::remove_if(index.begin(), index.end(), ::isspace), index.end());
+            
+            if(!index.empty()) {
             
                 if(is_valid(index)) {
                     
