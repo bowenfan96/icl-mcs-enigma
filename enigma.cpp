@@ -135,28 +135,27 @@ enigma::rotor::rotor(const char* rot_filename)
         std::unordered_set<int> set;
         
         for(int j=0; j < 26; j++) {
-            auto chk_err = set.insert(map_rtl[j]);
-            if(!chk_err.second) {
-                std::cerr << "Invalid mapping of input " << j << " to output " << map_rtl[j] << " (output " << map_rtl[j] << " is already mapped to from input " << map_rtl[map_rtl[j]] << ") in rotor file: " << rot_filename << "\n";
+            if(!set.insert(map_rtl[j]).second) {
+                auto repeat_val = std::find(map_rtl.cbegin(), map_rtl.cend(), map_rtl[j]);
+                
+                std::cerr << "Invalid mapping of input " << j << " to output " << map_rtl[j] << " (output " << map_rtl[j] << " is already mapped to from input " << std::distance(map_rtl.cbegin(), repeat_val) << ") in rotor file: " << rot_filename << "\n";
                 throw INVALID_ROTOR_MAPPING;
             }
         }
         
-        // set position 0 until enigma constructor turns the rotor after reading pos file
+        // set position to 0
+        // enigma constructor will turn the rotors after reading pos file
         position = 0;
         
+        // rotor is triggered if the rotor to its right reaches a trigger
         triggered = false;
     }
     
     // check if file open failed
     else {
+        std::cerr << "Rotor file " << rot_filename << " supplied cannot be opened" << "\n";
         throw ERROR_OPENING_CONFIGURATION_FILE;
     }
-    
-    // Check input mapping is one to one, and all inputs are mapped - done
-    // Check all numbers are 0 to 25 - done
-    // Check if inputs are all numbers - done
-    // Check rotor starting position
 }
 
 // rotor rotate function
@@ -164,29 +163,19 @@ void enigma::rotor::rotate()
 {
     position = (position + 1) % 26;
     
-    // std::cout << "Rotated" << std::endl;
-    
     if(std::find(triggers.cbegin(), triggers.cend(), position) != triggers.cend()) {
-        
-        // std::cout << "Triggered" << std::endl;
         triggered = true;
     }
-    
     else {
-        
-        // std::cout << "NOT triggered" << std::endl;
         triggered = false;
     }
 }
 
-// rotor mapper function
+// rotor mapper (right to left) function
 int enigma::rotor::mapper(int input) 
 {
-    
     // adjust for position of the rotor during input
     input = (input + position) % 26;
-    
-    // int index = std::distance(map_rtl, std::find(map_rtl, map_rtl + 26, input));
     
     input = map_rtl[input];
     
@@ -198,21 +187,15 @@ int enigma::rotor::mapper(int input)
         input = input + 26;
     }
     
-    // std::cout << "Forward mapped to: " << input << std::endl;
-    
     return input;
-
 }
 
 
-// rotor reflect mapper function
+// rotor reflect mapper (left to right) function
 int enigma::rotor::rf_mapper(int input) 
 {
-    
     // adjust for position of the rotor during input
     input = (input + position) % 26;
-    
-    // int index = std::distance(map_ltr, std::find(map_ltr, map_ltr + 26, input));
     
     input = map_ltr[input];
     
@@ -225,10 +208,7 @@ int enigma::rotor::rf_mapper(int input)
         input = input + 26;
     }
     
-    // std::cout << "Reflected index: " << input << std::endl;
-    
     return input;
-    
 }
 
 
