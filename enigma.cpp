@@ -139,6 +139,7 @@ enigma::rotor::rotor(const char* rot_filename)
                 auto repeat_val = std::find(map_rtl.cbegin(), map_rtl.cend(), map_rtl[j]);
                 
                 std::cerr << "Invalid mapping of input " << j << " to output " << map_rtl[j] << " (output " << map_rtl[j] << " is already mapped to from input " << std::distance(map_rtl.cbegin(), repeat_val) << ") in rotor file: " << rot_filename << "\n";
+                
                 throw INVALID_ROTOR_MAPPING;
             }
         }
@@ -190,7 +191,6 @@ int enigma::rotor::mapper(int input)
     return input;
 }
 
-
 // rotor reflect mapper (left to right) function
 int enigma::rotor::rf_mapper(int input) 
 {
@@ -222,7 +222,7 @@ enigma::reflector::reflector(const char* rf_filename)
         
         std::string index;
         int rf_num;
-        int i = 0, j = 0, k = 0;
+        int i = 0;
         size_t sz;
         
         while(std::getline(rf_file, index, ' ')) {
@@ -237,11 +237,9 @@ enigma::reflector::reflector(const char* rf_filename)
                     
                     if(i % 2 == 0) {
                         map_from.push_back(rf_num);
-                        j++;
                     }
                     else {
                         map_to.push_back(rf_num);
-                        k++;
                     }
                     i++;
                 }
@@ -250,16 +248,24 @@ enigma::reflector::reflector(const char* rf_filename)
         
         // check reflector is not empty or contain only 1 parameter
         if(map_from.size() == 0 || map_to.size() == 0) {
+            std::cerr << "Insufficient number of mappings in reflector file: " << rf_filename << "\n";
             throw INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS;
         }
         
         // check correct config (1 to 1 mapping, no value to itself)
         if(!is_one_to_one(map_from, map_to)) {
+            std::cerr << "Malformed contact points (not linked 1 to 1) in reflector file " << rf_filename << "\n";
             throw INVALID_REFLECTOR_MAPPING;
         }
         
         // check exactly 13 pairings
-        if(map_from.size() != 13 || map_to.size() != 13) {
+        if(map_from.size() != map_to.size()) {
+            std::cerr << "Incorrect (odd) number of parameters in reflector file " << rf_filename << "\n";
+            throw INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS;
+        }
+            
+        if(map_from.size() < 13 || map_to.size() < 13) {
+            std::cerr << "Insufficient number of mappings in reflector file: " << rf_filename << "\n";
             throw INCORRECT_NUMBER_OF_REFLECTOR_PARAMETERS;
         }
         
@@ -271,22 +277,14 @@ enigma::reflector::reflector(const char* rf_filename)
     
     // check if file open failed
     else {
+        std::cerr << "Reflector file " << rf_filename << " supplied cannot be opened" << "\n";
         throw ERROR_OPENING_CONFIGURATION_FILE;
     }
-    
-    
-    
-    // Check input is not mapped to itself and is one to one - done
-    // Check 13 pairs - done
-    // Check all numbers are 0 to 25 - done
-    // Check if inputs are all numbers - done
-    
 }
 
 // reflector mapper function
 int enigma::reflector::mapper(int input) 
 {
-    
     int index = std::distance(map_from.cbegin(), std::find(map_from.cbegin(), map_from.cend(), input));
     
     return map_to[index];
@@ -295,8 +293,7 @@ int enigma::reflector::mapper(int input)
 
 // enigma constructor
 enigma::enigma(int argc, char** argv) 
-{
-    
+{    
     // Minimum 3 parameters: 0 rotors, 1 plugboard, 1 reflector, 1 position
     // Check if there are 3 or more parameters supplied: argc >= 4
     if(argc < 4) {
