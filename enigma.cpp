@@ -116,18 +116,22 @@ enigma::plugboard::plugboard(const char* pb_filename)
             }
         }
         
+        std::cout << "map_from size: " << map_from.size() << std::endl;
+        
+        std::cout << "map_to size: " << map_to.size() << std::endl;
+        
         // check correct config (1 to 1 mapping, no value to itself)
         if(map_from.size() != 0) {
             if(map_to.size() == 0) {
                 throw INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS;
             }
-            else if(!is_one_to_one(map_from, map_to)) {
+            if(!is_one_to_one(map_from, map_to)) {
                 throw IMPOSSIBLE_PLUGBOARD_CONFIGURATION;
             }
         }
         
         // check odd number of parameters or more than 13 pairings
-        else if(map_from.size() != map_to.size() || map_from.size() > 13) {
+        if(map_from.size() != map_to.size() || map_from.size() > 13) {
             throw INCORRECT_NUMBER_OF_PLUGBOARD_PARAMETERS;
         }
         
@@ -526,7 +530,7 @@ bool enigma::is_valid(const std::string& index)
 bool enigma::is_one_to_one(const std::vector<int>& map_from, const std::vector<int>& map_to) 
 {
     // check if both arrays contain only unique elements
-    int sz = map_from.size();
+    int sz = map_to.size();
     
     std::unordered_set<int> set1;
     for(int i=0; i < sz; i++) {
