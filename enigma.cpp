@@ -79,14 +79,12 @@ enigma::plugboard::plugboard(const char* pb_filename)
 // plugboard mapper function
 int enigma::plugboard::mapper(int input) 
 {
-    
     auto iter = std::find(map_from.cbegin(), map_from.cend(), input);
     
     if(iter != map_from.cend()) {
         int index = std::distance(map_from.cbegin(), iter);
         return map_to.at(index);
     }
-    
     else {
         return input;
     }
@@ -128,15 +126,18 @@ enigma::rotor::rotor(const char* rot_filename)
             }
         }
         
-        // check mapping is correct
-        // check 26 numbers given in rotor file
+        // check mapping is correct, 26 numbers given in rotor file
         if(i < 26) {
+            std::cerr << "Not all inputs mapped in rotor file: " << rot_filename << "\n";
             throw INVALID_ROTOR_MAPPING;
         }
         // check all numbers are unique
         std::unordered_set<int> set;
+        
         for(int j=0; j < 26; j++) {
-            if(!set.insert(map_rtl[j]).second) {
+            auto chk_err = set.insert(map_rtl[j]);
+            if(!chk_err.second) {
+                std::cerr << "Invalid mapping of input " << j << " to output " << map_rtl[j] << " (output " << map_rtl[j] << " is already mapped to from input " << *(chk_err.first) << " ) in rotor file: " << rot_filename << "\n";
                 throw INVALID_ROTOR_MAPPING;
             }
         }
@@ -319,6 +320,7 @@ enigma::enigma(int argc, char** argv)
     // Minimum 3 parameters: 0 rotors, 1 plugboard, 1 reflector, 1 position
     // Check if there are 3 or more parameters supplied: argc >= 4
     if(argc < 4) {
+        std::cerr << "usage: enigma plugboard-file reflector-file (<rotor-file>)* rotor-positions" << "\n";
         throw INSUFFICIENT_NUMBER_OF_PARAMETERS;
     }
     
@@ -516,7 +518,7 @@ bool enigma::is_one_to_one(const std::vector<int>& map_from, const std::vector<i
 
 int main(int argc, char** argv) 
 {
-    // load components into enigma
+    // load components into enigma and try to catch errors
     try {
         enigma en(argc, argv);
         
@@ -535,7 +537,6 @@ int main(int argc, char** argv)
         // std::cout << "Error code: " << error << std::endl;
         return error;
     }
-    
     
     return(NO_ERROR);
 }
