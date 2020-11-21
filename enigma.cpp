@@ -433,9 +433,36 @@ enigma::enigma(int argc, char** argv)
     std::ifstream pos_file;
     pos_file.open(pos_filename);
     
-    int rot_pos;
-    while(pos_file >> rot_pos) {
-        vec_rot_posn.push_back(rot_pos);
+    if(pos_file.is_open()) {
+        
+        std::string index;
+        int pos_num;
+        int num_pos = 0;
+        size_t sz;
+        
+        while(std::getline(pos_file, index, ' ')) {
+            
+            index.erase(std::remove_if(index.begin(), index.end(), ::isspace), index.end());
+            
+            if(!index.empty()) {
+                if(is_valid(index)) {
+                    pos_num = std::stoi(index, &sz);
+                    vec_rot_posn.push_back(pos_num);
+                    num_pos++;
+                }
+            }
+        }
+        
+        // check every rotor has a starting position defined
+        // excessive positions are ignored
+        if(num_pos < num_rotors) {
+            throw NO_ROTOR_STARTING_POSITION;
+        }
+    }
+    
+    // check if position file open failed
+    else {
+        throw ERROR_OPENING_CONFIGURATION_FILE;
     }
     
     // load rotors
