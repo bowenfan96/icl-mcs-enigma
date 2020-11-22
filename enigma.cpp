@@ -407,6 +407,12 @@ enigma::enigma(int argc, char** argv)
 // enigma encryptor function
 char enigma::encryptor(char letter) 
 {
+    // check input letter is upper case letter
+    if(!isupper(letter)) {
+        std::cerr << letter << " is not a valid input character (input characters must be upper case letters A-Z)!" << "\n";
+        throw INVALID_INPUT_CHARACTER;
+    }
+    
     int input = letter - 'A';
     
     // send signal through plugboard
@@ -514,12 +520,7 @@ int main(int argc, char** argv)
         
         char input;
         while(std::cin >> std::ws >> input) {
-            if(isupper(input)) {
-                std::cout << en.encryptor(input) << std::flush;
-            }
-            else {
-                throw INVALID_INPUT_CHARACTER;
-            }
+            std::cout << en.encryptor(input) << std::flush;
         }
     }
     
