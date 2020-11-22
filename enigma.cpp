@@ -11,7 +11,12 @@
 #include "enigma.h"
 #include "errors.h"
 
-// plugboard constructor
+/* plugboard constructor
+ *
+ * 
+ * 
+ */
+
 enigma::plugboard::plugboard(const char* pb_filename) 
 {
     std::ifstream pb_file;
@@ -509,25 +514,4 @@ bool enigma::is_one_to_one(const std::vector<int>& map_from, const std::vector<i
     }
     
     return true;
-}
-
-
-int main(int argc, char** argv) 
-{
-    // load components into enigma and try to catch errors
-    try {
-        enigma en(argc, argv);
-        
-        char input;
-        while(std::cin >> std::ws >> input) {
-            std::cout << en.encryptor(input) << std::flush;
-        }
-    }
-    
-    catch(int error) {
-        // std::cout << "Error code: " << error << std::endl;
-        return error;
-    }
-    
-    return(NO_ERROR);
 }
