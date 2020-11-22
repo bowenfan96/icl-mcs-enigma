@@ -11,13 +11,16 @@
 #include "enigma.h"
 #include "errors.h"
 
-/* plugboard constructor
- *
- * 
- * 
+/* Plugboard constructor
+ * Run these checks:
+ * 1. file can be opened
+ * 2. remove whitespace and check index is not just whitespace (in case of double whitespace or trailing whitespace)
+ * 3. index is numeric
+ * 4. index is 0 - 25 using stoi (make sure is numeric before passing to stoi)
+ * 5. check 1 to 1 mapping
+ * 6. check even number of indices
  */
-
-enigma::plugboard::plugboard(const char* pb_filename) 
+Enigma::Plugboard::Plugboard(const char* pb_filename) 
 {
     std::ifstream pb_file;
     pb_file.open(pb_filename);
@@ -88,8 +91,13 @@ enigma::plugboard::plugboard(const char* pb_filename)
     }
 }
 
-// plugboard mapper function
-int enigma::plugboard::mapper(int input) 
+/* Plugboard mapper function
+ * auto keyword is used for vector iterator for simplicity - 
+ * the actual type is: std::vector<int>::iterator
+ * The function finds the index of the input in the map_from vector, and
+ * returns the element at this index in the map_to vector
+ */
+int Enigma::Plugboard::mapper(int input) 
 {
     auto iter = std::find(map_from.cbegin(), map_from.cend(), input);
     
@@ -103,8 +111,16 @@ int enigma::plugboard::mapper(int input)
 }
 
 
-// rotor constructor
-enigma::rotor::rotor(const char* rot_filename) 
+/* Rotor constructor
+ * Run these checks:
+ * 1. file can be opened
+ * 2. remove whitespace and check index is not just whitespace (in case of double whitespace or trailing whitespace)
+ * 3. index is numeric
+ * 4. index is 0 - 25 using stoi (make sure is numeric before passing to stoi)
+ * 5. check 1 to 1 mapping - 
+ * 1 to 1 mapping is verified by checking all 26 numbers defining the map are unique
+ */
+Enigma::Rotor::Rotor(const char* rot_filename) 
 {
     std::ifstream rot_file;
     rot_file.open(rot_filename);
@@ -153,7 +169,7 @@ enigma::rotor::rotor(const char* rot_filename)
         // check all numbers are unique
         std::unordered_set<int> set;
         
-        for(int j=0; j < 26; j++) {
+        for(int j=0; j<26; j++) {
             if(!set.insert(map_rtl[j]).second) {
                 auto repeat_val = std::find(map_rtl.cbegin(), map_rtl.cend(), map_rtl[j]);
                 
@@ -164,10 +180,10 @@ enigma::rotor::rotor(const char* rot_filename)
         }
         
         // set position to 0
-        // enigma constructor will turn the rotors after reading pos file
+        // Enigma constructor will turn the rotors after reading pos file
         position = 0;
         
-        // rotor is triggered if the rotor to its right reaches a trigger
+        // rotor is triggered if it rotates to its notch
         triggered = false;
     }
     
@@ -178,8 +194,11 @@ enigma::rotor::rotor(const char* rot_filename)
     }
 }
 
-// rotor rotate function
-void enigma::rotor::rotate() 
+/* Rotor rotate function
+ * % 26 is used to correct for complete turns
+ * Engage the triggered state if the rotor is turned onto its notch(es)
+ */
+void Enigma::Rotor::rotate() 
 {
     position = (position + 1) % 26;
     
@@ -191,15 +210,17 @@ void enigma::rotor::rotate()
     }
 }
 
-// rotor mapper (right to left) function
-int enigma::rotor::mapper(int input) 
+/* Rotor mapper (right to left) function
+ * Adjust for position offset during input and output
+ */
+int Enigma::Rotor::mapper(int input) 
 {
-    // adjust for position of the rotor during input
+    // adjust for offset of the rotor during input
     input = (input + position) % 26;
     
     input = map_rtl[input];
     
-    // adjust for position of the rotor during output
+    // adjust for offset of the rotor during output
     input = (input - position) % 26;
     
     // account for rollover if input - position is negative
@@ -210,16 +231,17 @@ int enigma::rotor::mapper(int input)
     return input;
 }
 
-// rotor reflect mapper (left to right) function
-int enigma::rotor::rf_mapper(int input) 
+/* Rotor reflect mapper (left to right) function
+ * Adjust for position offset during input and output
+ */
+int Enigma::Rotor::rf_mapper(int input) 
 {
-    // adjust for position of the rotor during input
+    // adjust for offset of the rotor during input
     input = (input + position) % 26;
     
     input = map_ltr[input];
     
-    // adjust for position of the rotor during output
-    
+    // adjust for offset of the rotor during output
     input = (input - position) % 26;
     
     // account for rollover if input - position is negative
@@ -231,8 +253,16 @@ int enigma::rotor::rf_mapper(int input)
 }
 
 
-// reflector constructor
-enigma::reflector::reflector(const char* rf_filename) 
+/* Reflector constructor
+ * Run these checks:
+ * 1. file can be opened
+ * 2. remove whitespace and check index is not just whitespace (in case of double whitespace or trailing whitespace)
+ * 3. index is numeric
+ * 4. index is 0 - 25 using stoi (make sure is numeric before passing to stoi)
+ * 5. check 1 to 1 mapping
+ * 6. check even number of indices
+ */
+Enigma::Reflector::Reflector(const char* rf_filename) 
 {
     std::ifstream rf_file;
     rf_file.open(rf_filename);
@@ -308,8 +338,10 @@ enigma::reflector::reflector(const char* rf_filename)
     }
 }
 
-// reflector mapper function
-int enigma::reflector::mapper(int input) 
+/* Reflector mapper function
+ * The reflector is already checked to be well-formed, so the mapped_to element can be found for any element in map_from
+ */
+int Enigma::Reflector::mapper(int input) 
 {
     int index = std::distance(map_from.cbegin(), std::find(map_from.cbegin(), map_from.cend(), input));
     
@@ -317,8 +349,15 @@ int enigma::reflector::mapper(int input)
 }
 
 
-// enigma constructor
-enigma::enigma(int argc, char** argv) 
+/* Enigma constructor
+ * Run these checks:
+ * 1. enough number of parameters given
+ * 2. attempt to load rotors only if there is any
+ * 3. check rotors all have starting positions given -
+ * I have chosen to ignore excessive positions instead of throwing an exception
+ * e.g. 3 rotors with 4 positions specified will still load with the 4th position ignored
+ */
+Enigma::Enigma(int argc, char** argv) 
 {    
     // Minimum 3 parameters: 0 rotors, 1 plugboard, 1 reflector, 1 position
     // Check if there are 3 or more parameters supplied: argc >= 4
@@ -346,8 +385,8 @@ enigma::enigma(int argc, char** argv)
     
     pos_filename = argv[argc - 1];
     
-    // load plugboard
-    pb = new plugboard(pb_filename.c_str());
+    // load Plugboard
+    pb = new Plugboard(pb_filename.c_str());
     
     // load rotor positions
     std::ifstream pos_file;
@@ -400,17 +439,20 @@ enigma::enigma(int argc, char** argv)
     // load rotors
     if(num_rotors > 0) {
         for(int i=0; i<num_rotors; i++) {
-            vec_rotors.push_back(rotor(rot_filenames.at(i).c_str()));
+            vec_rotors.push_back(Rotor(rot_filenames.at(i).c_str()));
             vec_rotors.at(i).position = vec_rot_posn.at(i);
         }
     }
     
-    // load reflector
-    rf = new reflector(rf_filename.c_str());
+    // load Reflector
+    rf = new Reflector(rf_filename.c_str());
 }
 
-// enigma encryptor function
-char enigma::encryptor(char letter) 
+/* Enigma encryptor function
+ * auto keyword is used for the Rotor vector iterators for simplicity - 
+ * the actual type is: std::vector<Enigma::Rotor>::iterator
+ */
+char Enigma::encryptor(char letter) 
 {
     // check input letter is upper case letter
     if(!isupper(letter)) {
@@ -420,7 +462,7 @@ char enigma::encryptor(char letter)
     
     int input = letter - 'A';
     
-    // send signal through plugboard
+    // send signal through Plugboard
     input = pb->mapper(input);
     
     // send signal through rotors, right to left
@@ -443,7 +485,7 @@ char enigma::encryptor(char letter)
         }
     }
     
-    // reflect signal through plugboard
+    // reflect signal through Plugboard
     input = pb->mapper(input);
     
     // cast int to corresponding letter
@@ -452,22 +494,27 @@ char enigma::encryptor(char letter)
     return letter_out;
 }
 
-// enigma turn rotors function
-void enigma::turn_rotors() 
+/* Enigma turn rotors function
+ * A reverse iterator is used, auto is used - the actual type is std::vector<Enigma::Rotor>::iterator
+ * Turn a rotor if the rotor to its right is triggered
+ */
+void Enigma::turn_rotors() 
 {
     for(auto rot = vec_rotors.rbegin(); rot != vec_rotors.rend(); ++rot) {
         
         if(rot == vec_rotors.rbegin()) {
             rot->rotate();
         }
-        
         else if ((rot-1)->triggered) {
             rot->rotate();
         }
     }
 }
 
-bool enigma::is_numeric(const std::string& index)
+/* Static function in Enigma class to check if input is numeric
+ * Range-based for loop is used for simplicity to check if every char in index string is numeric
+ */
+bool Enigma::is_numeric(const std::string& index)
 {
     for(auto ch : index) {
         if(!isdigit(ch)) {
@@ -477,7 +524,11 @@ bool enigma::is_numeric(const std::string& index)
     return true;
 }
 
-bool enigma::is_valid(const std::string& index) 
+/* Static function in Enigma class to check if input is valid alphabet letter (0 to 25)
+ * Convert index string to integer using stoi
+ * stoi will fail if string is whitespace, so we have checked for this before calling the function
+ */
+bool Enigma::is_valid(const std::string& index) 
 {
     size_t sz;
     int num = std::stoi(index, &sz);
@@ -487,8 +538,13 @@ bool enigma::is_valid(const std::string& index)
     return true;
 }
 
-
-bool enigma::is_one_to_one(const std::vector<int>& map_from, const std::vector<int>& map_to) 
+/* Static function in Enigma class to check if 2 vectors map to each other in a one-to-one relationship
+ * If two vector arrays are of equal size (checked before calling this function),
+ * and if both arrays contain only unique elements,
+ * and if no element maps to itself,
+ * then these two vector arrays are in a valid one-to-one mapping relationship
+ */
+bool Enigma::is_one_to_one(const std::vector<int>& map_from, const std::vector<int>& map_to) 
 {
     // check if both arrays contain only unique elements
     int sz = map_to.size();
