@@ -360,10 +360,20 @@ enigma::enigma(int argc, char** argv)
             index.erase(std::remove_if(index.begin(), index.end(), ::isspace), index.end());
             
             if(!index.empty()) {
-                if(is_valid(index)) {
-                    pos_num = std::stoi(index, &sz);
-                    vec_rot_posn.push_back(pos_num);
-                    num_pos++;
+                if(is_numeric(index)) {
+                    if(is_valid(index)) {
+                        pos_num = std::stoi(index, &sz);
+                        vec_rot_posn.push_back(pos_num);
+                        num_pos++;
+                    }
+                    else {
+                        std::cerr << "Index in rotor positions file " << pos_filename << " does not correspond to an alphabet letter" << "\n";
+                        throw INVALID_INDEX;
+                    }
+                }
+                else {
+                    std::cerr << "Non-numeric character in rotor positions file " << pos_filename << "\n";
+                    throw NON_NUMERIC_CHARACTER;
                 }
             }
         }
