@@ -29,18 +29,25 @@ enigma::plugboard::plugboard(const char* pb_filename)
             index.erase(std::remove_if(index.begin(), index.end(), ::isspace), index.end());
             
             if(!index.empty()) {
-                
-                if(is_valid(index)) {
-                
-                    pb_num = std::stoi(index, &sz);
-                    
-                    if(i % 2 == 0) {
-                        map_from.push_back(pb_num);
+                if(is_numeric(index)) {
+                    if(is_valid(index)) {
+                        pb_num = std::stoi(index, &sz);
+                        if(i % 2 == 0) {
+                            map_from.push_back(pb_num);
+                        }
+                        else {
+                            map_to.push_back(pb_num);
+                        }
+                        i++;
                     }
                     else {
-                        map_to.push_back(pb_num);
+                        std::cerr << "Index in plugboard file " << pb_filename << " does not correspond to an alphabet letter" << "\n";
+                        throw INVALID_INDEX;
                     }
-                    i++;
+                }
+                else {
+                    std::cerr << "Non-numeric character in plugboard file " << pb_filename << "\n";
+                    throw NON_NUMERIC_CHARACTER;
                 }
             }
         }
@@ -109,19 +116,26 @@ enigma::rotor::rotor(const char* rot_filename)
             index.erase(std::remove_if(index.begin(), index.end(), ::isspace), index.end());
             
             if(!index.empty()) {
-            
-                if(is_valid(index)) {
-                    
-                    rot_num = std::stoi(index, &sz);
-                    
-                    if(i <= 25) {
-                        map_rtl[i] = rot_num;
-                        map_ltr[rot_num] = i;
+                if(is_numeric(index)) {
+                    if(is_valid(index)) {
+                        rot_num = std::stoi(index, &sz);
+                        if(i <= 25) {
+                            map_rtl[i] = rot_num;
+                            map_ltr[rot_num] = i;
+                        }
+                        else {
+                            triggers.push_back(rot_num);
+                        }
+                        i++;
                     }
                     else {
-                        triggers.push_back(rot_num);
+                        std::cerr << "Index in rotor file " << rot_filename << " does not correspond to an alphabet letter" << "\n";
+                        throw INVALID_INDEX;
                     }
-                    i++;
+                }
+                else {
+                    std::cerr << "Non-numeric character for mapping in rotor file " << rot_filename << "\n";
+                    throw NON_NUMERIC_CHARACTER;
                 }
             }
         }
@@ -230,18 +244,25 @@ enigma::reflector::reflector(const char* rf_filename)
             index.erase(std::remove_if(index.begin(), index.end(), ::isspace), index.end());
             
             if(!index.empty()) {
-            
-                if(is_valid(index)) {
-                    
-                    rf_num = std::stoi(index, &sz);
-                    
-                    if(i % 2 == 0) {
-                        map_from.push_back(rf_num);
+                if(is_numeric(index)) {
+                    if(is_valid(index)) {
+                        rf_num = std::stoi(index, &sz);
+                        if(i % 2 == 0) {
+                            map_from.push_back(rf_num);
+                        }
+                        else {
+                            map_to.push_back(rf_num);
+                        }
+                        i++;
                     }
                     else {
-                        map_to.push_back(rf_num);
+                        std::cerr << "Index in reflector file " << rf_filename << " does not correspond to an alphabet letter" << "\n";
+                        throw INVALID_INDEX;
                     }
-                    i++;
+                }
+                else {
+                    std::cerr << "Non-numeric character in reflector file " << rf_filename << "\n";
+                    throw NON_NUMERIC_CHARACTER;
                 }
             }
         }
@@ -311,7 +332,6 @@ enigma::enigma(int argc, char** argv)
     
     // check if there are rotor(s), then load them
     num_rotors = 0;
-    
     if(argc > 4) {
         for(int i=3; i < (argc - 1); i++) {
             rot_filenames.push_back(argv[i]);
@@ -351,12 +371,14 @@ enigma::enigma(int argc, char** argv)
         // check every rotor has a starting position defined
         // excessive positions are ignored
         if(num_pos < num_rotors) {
+            std::cerr << "No starting position for rotor " << num_pos << " in rotor position file: " << pos_filename << "\n";
             throw NO_ROTOR_STARTING_POSITION;
         }
     }
     
     // check if position file open failed
     else {
+        std::cerr << "Rotor positions file " << pos_filename << " supplied cannot be opened" << "\n";
         throw ERROR_OPENING_CONFIGURATION_FILE;
     }
     
@@ -372,94 +394,75 @@ enigma::enigma(int argc, char** argv)
     rf = new reflector(rf_filename.c_str());
 }
 
-
 // enigma encryptor function
 char enigma::encryptor(char letter) 
 {
-    
     int input = letter - 'A';
     
-    // std::cout << "Input is " << input << std::endl;
-        
+    // send signal through plugboard
     input = pb->mapper(input);
     
-    // std::cout << "After plugboard: " << input << std::endl;
-        
+    // send signal through rotors, right to left
     if(num_rotors > 0) {
-        // for rotor in rotors - but starting from rightmost
-        // a reverse iterator is used
-        
-        //std::vector<enigma::rotor>::reverse_iterator
         turn_rotors();
         
+        // use reverse iterator for right to left signal flow
         for(auto rot = vec_rotors.rbegin(); rot != vec_rotors.rend(); ++rot) {
-            
             input = rot->mapper(input);
         }
     }
-                
-    // std::cout << "After right to left rotors: " << input << std::endl;
     
+    // send signal through reflector
     input = rf->mapper(input);
     
-    // std::cout << "After reflector: " << input << std::endl;
-    
+    // reflect signal through rotors, left to right
     if(num_rotors > 0) {
-        // rotor after reflectors
-        
         for(auto rot = vec_rotors.begin(); rot != vec_rotors.end(); ++rot) {
-            
             input = rot->rf_mapper(input);
-            
         }
     }
     
+    // reflect signal through plugboard
     input = pb->mapper(input);
     
-    // std::cout << "After left to right rotors, FINAL: " << input << std::endl;
-    
+    // cast int to corresponding letter
     char letter_out = (char)('A' + input);
+    
     return letter_out;
 }
-
 
 // enigma turn rotors function
 void enigma::turn_rotors() 
 {
-    
-    // vec_rotors.rbegin()->rotate();
-    
     for(auto rot = vec_rotors.rbegin(); rot != vec_rotors.rend(); ++rot) {
         
         if(rot == vec_rotors.rbegin()) {
             rot->rotate();
-            
-            // std::cout << "Rotated 1" << std::endl;
         }
         
         else if ((rot-1)->triggered) {
             rot->rotate();
-            
-            // std::cout << "Rotated 2" << std::endl;
         }
     }
 }
 
-
-bool enigma::is_valid(const std::string& index)
+bool enigma::is_numeric(const std::string& index)
 {
     for(auto ch : index) {
         if(!isdigit(ch)) {
-            throw NON_NUMERIC_CHARACTER;
+            return false;
         }
     }
-    
+    return true;
+}
+
+bool enigma::is_valid(const std::string& index) 
+{
     size_t sz;
     int num = std::stoi(index, &sz);
     if(num < 0 || num > 25) {
-        throw INVALID_INDEX;
+        return false;
     }
-    
     return true;
 }
 

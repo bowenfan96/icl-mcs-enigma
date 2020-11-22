@@ -44,6 +44,7 @@ public:
     enigma(int, char**);
     char encryptor(char);
     
+    static bool is_numeric(const std::string&);
     static bool is_valid(const std::string&);
     static bool is_one_to_one(const std::vector<int>&, const std::vector<int>&);
 };
