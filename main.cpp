@@ -21,6 +21,11 @@
  * in order to pass back the error code using an object attribute.
  * 
  * Best effort was made to match the error messages on the LabTS tests verbatim.
+ * 
+ * Memory leak tested with Valgrind - 
+ * "in use at exit: 0 bytes in 0 blocks"
+ * "total heap usage: 164 allocs, 164 frees, 132,463 bytes allocated"
+ * "All heap blocks were freed -- no leaks are possible"
  */
 
 int main(int argc, char** argv) 

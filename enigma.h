@@ -58,6 +58,7 @@ private:
     Reflector* rf = NULL;
 public:
     Enigma(int, char**);
+    ~Enigma();
     char encryptor(char);
     
     static bool is_numeric(const std::string&);

@@ -571,3 +571,11 @@ bool Enigma::is_one_to_one(const std::vector<int>& map_from, const std::vector<i
     
     return true;
 }
+
+/* Enigma destructor
+ * Frees up heap memory
+ */
+Enigma::~Enigma() {
+    delete pb;
+    delete rf;
+}
